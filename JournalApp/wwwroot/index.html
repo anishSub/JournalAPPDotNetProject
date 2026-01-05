@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>JournalApp</title>
+    <base href="/" />
+
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="JournalApp.styles.css" />
+    <link rel="icon" href="data:,">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+
+<body>
+
+    <div class="status-bar-safe-area"></div>
+
+    <div id="app">Loading...</div>
+
+
+
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
+
+    <script>
+        // Theme Management
+        (function() {
+            function getPreferredTheme() {
+                // Return 'dark' if local storage says so, or if system pref is dark and local storage is empty
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    return 'dark';
+                }
+                return 'light';
+            }
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            // Apply on load
+            applyTheme(getPreferredTheme());
+
+            // Global function for Blazor
+            window.toggleTheme = function() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const newTheme = isDark ? 'light' : 'dark';
+                applyTheme(newTheme);
+                localStorage.theme = newTheme;
+                return newTheme === 'dark';
+            };
+            
+            // Check current state for Blazor initialization
+            window.isDarkTheme = function() {
+                return document.documentElement.classList.contains('dark');
+            };
+        })();
+    </script>
+    <script src="js/dashboard-charts.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="js/export-pdf.js"></script>
+</body>
+</html>

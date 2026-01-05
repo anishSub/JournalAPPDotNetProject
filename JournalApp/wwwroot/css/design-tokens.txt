@@ -1,0 +1,19 @@
+/* 
+   Design Token Mapping (React -> CSS Variables)
+   ---------------------------------------------
+   Background:
+     Dark: bg-gray-900 -> --app-bg (#0f172a)
+     Light: bg-gradient... -> --app-bg (linear-gradient(...))
+   
+   Card:
+     Dark: bg-gray-800 -> --surface-card (#1e293b)
+     Light: bg-white -> --surface-card (#ffffff)
+
+   Text:
+     Dark: text-white / text-gray-400 -> --text-main / --text-secondary
+     Light: text-gray-900 / text-gray-600 -> --text-main / --text-secondary
+
+   Primary:
+     Both: blue-600 -> --primary (#2563eb)
+     Light Icon Bg: blue-100 -> --primary-light (#dbeafe)
+*/

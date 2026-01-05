@@ -1,0 +1,8 @@
+[bB]in/
+[oO]bj/
+.vs/
+*.user
+*.suo
+*.lock.json
+.DS_Store
+Thumbs.db

@@ -1,0 +1,340 @@
+﻿/* Global Design Tokens */
+:root {
+    --font-size: 16px;
+    --background: #ffffff;
+    --foreground: #202020;
+    --card: #ffffff;
+    --card-foreground: #202020;
+    --popover-foreground: #202020;
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #030213;
+    --muted: #ececf0;
+    --muted-foreground: #717182;
+    --accent: #e9ebef;
+    --accent-foreground: #030213;
+    --destructive: #d4183d;
+    --destructive-foreground: #ffffff;
+    --border: rgba(0, 0, 0, 0.1);
+    --input: transparent;
+    --input-background: #f3f3f5;
+    --switch-background: #cbced4;
+    --font-weight-medium: 500;
+    --font-weight-normal: 400;
+    --ring: #b4b4b4;
+    --chart-1: #e76e50;
+    --chart-2: #2a9d8f;
+    --chart-3: #264653;
+    --chart-4: #e9c46a;
+    --chart-5: #f4a261;
+    --radius: 0.625rem;
+    --sidebar: #fcfcfc;
+    --sidebar-foreground: #202020;
+    --sidebar-primary: #030213;
+    --sidebar-primary-foreground: #fcfcfc;
+    --sidebar-accent: #f7f7f7;
+    --sidebar-accent-foreground: #333333;
+    --sidebar-border: #ebebeb;
+    --sidebar-ring: #b4b4b4;
+
+    /* --- ALIAS MAPPING (Old names -> New structure) --- */
+    --app-bg: var(--background);
+    --surface-card: var(--card);
+    --text-main: var(--foreground);
+    --text-secondary: var(--muted-foreground);
+    --text-inverse: var(--primary-foreground);
+    /* --primary from above is #030213 (Dark/Black). 
+       The user's previous design used Blue (#2563eb).
+       If they want Blue for primary actions but Black for theme primary, 
+       we might need a separate --action-color. 
+       For now, we'll map --primary to the standard primary.
+    */
+    /* --primary: defined above */
+    --primary-hover: #1d4ed8;
+    /* Fallback */
+    --primary-light: var(--muted);
+    /* --border: defined above */
+    --input-bg: var(--input-background);
+    --input-placeholder: var(--muted-foreground);
+    --focus-ring: var(--ring);
+
+    /* Spacing & Radius Preservation */
+    --radius-lg: 0.5rem;
+    --radius-xl: 1rem;
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+    --background: #202020;
+    --foreground: #fcfcfc;
+    --card: #333333;
+    /* Lighter than background */
+    --card-foreground: #fcfcfc;
+    --popover: #202020;
+    --popover-foreground: #fcfcfc;
+    --primary: #2563eb;
+    --primary-foreground: #ffffff;
+    --secondary: #444444;
+    --secondary-foreground: #fcfcfc;
+    --muted: #444444;
+    --muted-foreground: #b4b4b4;
+    --accent: #444444;
+    --accent-foreground: #fcfcfc;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #444444;
+    --input: #444444;
+    --ring: #707070;
+    --font-weight-medium: 500;
+    --font-weight-normal: 400;
+    --chart-1: #3b82f6;
+    --chart-2: #10b981;
+    --chart-3: #f4a261;
+    --chart-4: #a855f7;
+    --chart-5: #f43f5e;
+    --sidebar: #333333;
+    --sidebar-foreground: #fcfcfc;
+    --sidebar-primary: #3b82f6;
+    --sidebar-primary-foreground: #fcfcfc;
+    --sidebar-accent: #444444;
+    --sidebar-accent-foreground: #fcfcfc;
+    --sidebar-border: #444444;
+    --sidebar-ring: #707070;
+    --input-background: #444444;
+    /* Fix inputs being white in dark mode */
+}
+
+html,
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--background);
+    color: var(--foreground);
+    min-height: 100vh;
+}
+
+/* Reset Box Sizing */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* ========================================= */
+/* SIDEBAR STYLES (Moved from NavMenu.razor.css) */
+/* ========================================= */
+
+.sidebar {
+    width: 16rem;
+    /* w-64 */
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    background-color: var(--surface-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+    transition: background-color 0.3s, border-color 0.3s;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll affecting layout */
+}
+
+/* Header */
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    /* Prevent shrinking */
+}
+
+/* Brand Layout */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Logo Image */
+.logo-img {
+    height: 3.5rem;
+    width: 3.5rem;
+    /* Fixed width to ensure square aspect ratio if it is an icon */
+    display: block;
+    object-fit: cover;
+    /* Cover or contain depending on image */
+    border-radius: 12px;
+    /* Make it look like an App Icon */
+}
+
+.brand-slogan {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.2;
+}
+
+.brand-slogan span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.streak-text {
+    font-size: 0.75rem;
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.theme-toggle {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.theme-toggle:hover {
+    color: var(--text-main);
+    background-color: var(--app-bg);
+}
+
+/* Navigation */
+/* Navigation */
+.nav-menu {
+    flex: 1;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+}
+
+/* Important: Target the anchor tag specifically */
+.sidebar a.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    color: var(--text-secondary);
+    /* Override default link color */
+    text-decoration: none;
+    /* Remove underline */
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+    width: 100%;
+    box-sizing: border-box;
+    cursor: pointer;
+    outline: none;
+    /* Remove default focus ring */
+}
+
+.sidebar a.nav-item:focus {
+    outline: none;
+}
+
+.sidebar a.nav-item:hover {
+    background-color: var(--app-bg);
+    color: var(--text-main);
+}
+
+/* Active State */
+.sidebar a.nav-item.active {
+    background-color: var(--primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    font-weight: 600;
+}
+
+/* Icons */
+.sidebar .nav-item svg {
+    width: 1.25rem;
+    /* 20px */
+    height: 1.25rem;
+    stroke: currentColor;
+    /* Use text color */
+    transition: stroke 0.2s;
+}
+
+/* Force white stroke on active - REMOVED ::deep since this is global */
+.sidebar a.nav-item.active svg {
+    stroke: white !important;
+}
+
+/* Footer */
+.sidebar-footer {
+    padding: 1.5rem 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background-color: var(--surface-card);
+    flex-shrink: 0;
+}
+
+.sidebar .btn-new-entry {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.875rem;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+    outline: none;
+}
+
+.sidebar .btn-new-entry:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.5);
+}
+
+.sidebar .btn-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.625rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.sidebar .btn-logout:hover {
+    background-color: var(--app-bg);
+    color: var(--text-main);
+    border-color: var(--border);
+}
