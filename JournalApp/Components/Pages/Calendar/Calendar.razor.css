@@ -1,0 +1,270 @@
+.calendar-container {
+  padding: 2rem;
+  min-height: 100vh;
+  color: var(--text-main);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.calendar-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+/* Lower threshold so it stays side-by-side on laptops/tablets (~1024px screen) */
+@container main-content (min-width: 768px) {
+  .calendar-layout {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1rem;
+    /* Tighter gap for medium screens */
+  }
+
+  /* Compact padding for side-by-side view on smaller screens */
+  .calendar-card,
+  .entries-card {
+    padding: 1.5rem !important;
+    /* Force override */
+  }
+}
+
+/* On very tight screens, remove aspect-ratio constraint */
+@container main-content (max-width: 900px) {
+  .day-cell {
+    aspect-ratio: auto;
+    /* Remove square constraint */
+    min-height: 2.5rem;
+    /* Give minimum height */
+    padding: 0.5rem 0;
+    /* Add some vertical padding */
+  }
+
+  .calendar-grid {
+    gap: 0.25rem;
+    /* Even tighter gap */
+  }
+}
+
+/* Calendar Card */
+.calendar-card {
+  background-color: var(--surface-card);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: var(--shadow-xl);
+  min-width: 0;
+  /* Fix flex/grid child overflow */
+}
+
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background-color: var(--app-bg);
+  color: var(--text-main);
+}
+
+.current-month {
+  text-align: center;
+}
+
+.current-month h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.current-month span {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Grid */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+  overflow: hidden;
+  /* Prevent grid blowout on resize */
+}
+
+.weekday-header {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-bottom: 1rem;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  min-height: 0;
+  /* Allow shrinking */
+  width: 100%;
+  max-width: 100%;
+  /* Prevent overflow */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.day-cell:hover:not(.empty) {
+  background-color: var(--app-bg);
+  color: var(--text-main);
+}
+
+.day-cell.today {
+  background-color: var(--primary);
+  /* Primary blue */
+  color: white;
+}
+
+.day-cell.selected {
+  border: 2px solid var(--primary);
+}
+
+.entry-dot {
+  width: 4px;
+  height: 4px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  position: absolute;
+  bottom: 6px;
+}
+
+.day-cell.today .entry-dot {
+  background-color: white;
+}
+
+/* Legend */
+.calendar-legend {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  display: flex;
+  gap: 2rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.25rem;
+}
+
+.dot.has-entry {
+  background-color: var(--primary);
+}
+
+.dot.today {
+  background-color: var(--primary);
+  /* Assuming same color visually for demo */
+  opacity: 0.5;
+}
+
+/* Side Panel */
+.entries-card {
+  background-color: var(--surface-card);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: var(--shadow-xl);
+  min-width: 0;
+  /* Fix flex/grid child overflow */
+}
+
+.entries-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+}
+
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mini-entry-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--app-bg);
+  border-radius: 1rem;
+  transition: transform 0.2s;
+}
+
+.mini-entry-card:hover {
+  transform: translateX(4px);
+}
+
+.entry-emoji {
+  font-size: 1.5rem;
+  background-color: var(--surface-card);
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+}
+
+.entry-info h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.entry-date {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.empty-entries {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}

@@ -1,0 +1,177 @@
+@page "/"
+@using JournalApp.Models
+@using JournalApp.Components.Shared
+@inject NavigationManager Navigation
+@inject JournalApp.Services.IJournalService JournalService
+@inject JournalApp.Data.JournalDatabase JournalDatabase
+
+<div class="home-container">
+    <div class="home-content">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="header-top">
+                <h2>Journal</h2>
+                <button class="btn-new-entry" @onclick="NavigateToNewEntry">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Entry
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <svg xmlns="http://www.w3.org/2000/svg" class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" 
+                       placeholder="Search entries..." 
+                       @bind="SearchQuery" 
+                       @bind:event="oninput"
+                       class="search-input" />
+            </div>
+        </div>
+
+        <!-- Entries Grid -->
+        <div class="entries-section">
+            <h3>Recent Entries</h3>
+            
+            <div class="entries-grid">
+                @foreach (var entry in CurrentEntries)
+                {
+                    <div class="grid-item">
+                        <EntryCard Entry="@entry" />
+                    </div>
+                }
+            </div>
+
+            @if (!FilteredEntries.Any())
+            {
+                <div class="empty-state">
+                    No entries found. Start writing your first journal entry!
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (TotalPages > 1)
+        {
+            <div class="pagination-container">
+                <div class="pagination">
+                    <button class="page-btn prev" @onclick="PrevPage" disabled="@(CurrentPage == 1)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Previous</span>
+                    </button>
+
+                    @foreach (var pageNum in GetPageNumbers())
+                    {
+                        if (pageNum == -1)
+                        {
+                            <span class="page-ellipsis">...</span>
+                        }
+                        else
+                        {
+                            <button class="page-btn number @(CurrentPage == pageNum ? "active" : "")" 
+                                    @onclick="() => GoToPage(pageNum)">
+                                @pageNum
+                            </button>
+                        }
+                    }
+
+                    <button class="page-btn next" @onclick="NextPage" disabled="@(CurrentPage == TotalPages)">
+                        <span>Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string SearchQuery { get; set; } = "";
+    private int CurrentPage { get; set; } = 1;
+    private const int EntriesPerPage = 6;
+    private List<JournalEntry> AllEntries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllEntries = await JournalService.GetAllEntriesAsync();
+
+        // SEED DATA: Disabled
+        /*
+        // var entries = await JournalService.GetAllEntriesAsync();
+        // if (!entries.Any())
+        // {
+             await JournalApp.Data.SeedData.SeedJournalEntries(JournalDatabase);
+             // Verify it worked
+             AllEntries = await JournalService.GetAllEntriesAsync(); 
+        // }
+        */
+    }
+
+    private void NavigateToNewEntry()
+    {
+        Navigation.NavigateTo("journal/create");
+    }
+
+    private IEnumerable<JournalEntry> FilteredEntries => 
+        AllEntries
+        .Where(e => string.IsNullOrWhiteSpace(SearchQuery) ||
+            (e.Title?.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ?? false) || 
+            (e.Preview?.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ?? false))
+        .OrderByDescending(e => e.Date); 
+
+    private IEnumerable<JournalEntry> CurrentEntries => 
+        FilteredEntries.Skip((CurrentPage - 1) * EntriesPerPage).Take(EntriesPerPage);
+
+    private int TotalPages => (int)Math.Ceiling(FilteredEntries.Count() / (double)EntriesPerPage);
+
+    private void PrevPage()
+    {
+        if (CurrentPage > 1) CurrentPage--;
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages) CurrentPage++;
+    }
+
+    private void GoToPage(int page)
+    {
+        CurrentPage = page;
+    }
+
+    private List<int> GetPageNumbers()
+    {
+        var pages = new List<int>();
+        int total = TotalPages;
+        int maxVisible = 5;
+
+        // Using -1 to represent ellipsis
+        if (total <= maxVisible + 2)
+        {
+            for (int i = 1; i <= total; i++) pages.Add(i);
+        }
+        else
+        {
+            pages.Add(1);
+            if (CurrentPage > 3) pages.Add(-1);
+
+            int start = Math.Max(2, CurrentPage - 1);
+            int end = Math.Min(total - 1, CurrentPage + 1);
+
+            for (int i = start; i <= end; i++) pages.Add(i);
+
+            if (CurrentPage < total - 2) pages.Add(-1);
+            pages.Add(total);
+        }
+        return pages;
+    }
+}

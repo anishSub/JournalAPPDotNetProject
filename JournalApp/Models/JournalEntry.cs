@@ -2,26 +2,59 @@ using System;
 
 namespace JournalApp.Models
 {
+    /// <summary>
+    /// Represents a single journal entry made by the user.
+    /// Updated to use proper relational foreign keys.
+    /// </summary>
     public class JournalEntry
     {
         [SQLite.PrimaryKey]
         public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        // The main title of the journal entry.
         public string Title { get; set; } = string.Empty;
+
+        // A short preview of the content for display in lists.
         public string Preview { get; set; } = string.Empty;
-        public string Date { get; set; } = string.Empty; // Keeping as string for UI match, typically DateTime
-        public string Mood { get; set; } = string.Empty; // Emoji
-        public string MoodLabel { get; set; } = string.Empty;
-        
-        [SQLite.Ignore]
-        public List<string> Tags { get; set; } = new();
 
-        // Database helper for serializing Tags
-        public string TagsString
-        {
-            get => string.Join(",", Tags);
-            set => Tags = string.IsNullOrEmpty(value) ? new List<string>() : value.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
-        }
+        // The date of the entry (changed to DateTime for proper querying)
+        public DateTime Date { get; set; } = DateTime.Today;
 
+        public string SecondaryMood { get; set; } = string.Empty; // e.g. "Anxious", "Tired", "Blessed"
+
+        // Foreign Keys
+        [SQLite.Indexed]
+        public string UserId { get; set; } = string.Empty; // Foreign Key to User
+
+        [SQLite.Indexed]
+        public int? MoodId { get; set; } // Foreign Key to Mood (nullable)
+
+        [SQLite.Indexed]
+        public int? CategoryId { get; set; } // Foreign Key to Category (nullable)
+
+        // The full content/body of the journal entry (can include Markdown).
         public string Content { get; set; } = string.Empty;
+
+        // Timestamps
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTime ModifiedDate { get; set; } = DateTime.Now;
+
+        // Navigation properties (NOT stored in database, used for joining)
+        [SQLite.Ignore]
+        public Mood? Mood { get; set; }
+
+        [SQLite.Ignore]
+        public Category? Category { get; set; }
+
+        [SQLite.Ignore]
+        public List<Tag> Tags { get; set; } = new();
+
+        // BACKWARD COMPATIBILITY: Keep these for existing UI code
+        // These will be populated from the Mood object
+        [SQLite.Ignore]
+        public string MoodLabel => Mood?.Name ?? string.Empty;
+
+        [SQLite.Ignore]
+        public string MoodEmoji => Mood?.Emoji ?? string.Empty;
     }
 }

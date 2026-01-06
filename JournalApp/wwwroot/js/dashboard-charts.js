@@ -109,7 +109,31 @@ window.dashboardCharts = {
                 yaxis: { lines: { show: true } }
             },
             theme: { mode: isDark ? 'dark' : 'light' },
-            tooltip: { theme: isDark ? 'dark' : 'light' }
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                x: {
+                    show: true,
+                    formatter: function (val, opts) {
+                        // Robust handling for distributed charts where val might be an object
+                        if (typeof val === 'string') return val;
+                        if (val && val.toString() !== '[object Object]') return val.toString();
+
+                        // Fallback using data point index
+                        if (opts && opts.w && opts.w.globals && opts.w.globals.labels && opts.dataPointIndex !== undefined) {
+                            return opts.w.globals.labels[opts.dataPointIndex];
+                        }
+
+                        return "Tag";
+                    }
+                },
+                y: {
+                    title: {
+                        formatter: function () {
+                            return "Count:";
+                        }
+                    }
+                }
+            }
         };
 
         const currentEl = document.getElementById(elementId);

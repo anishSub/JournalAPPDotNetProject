@@ -1,0 +1,183 @@
+@page "/calendar"
+@inject JournalApp.Services.IJournalService JournalService
+@using System.Globalization
+
+<div class="calendar-container">
+    <div class="calendar-header">
+        <h1>Calendar</h1>
+    </div>
+
+    <div class="calendar-layout">
+        <!-- Calendar Grid Card -->
+        <div class="calendar-card">
+            <div class="calendar-nav">
+                <button class="nav-btn" @onclick="PrevMonth">‹</button>
+                <div class="current-month">
+                    <h2>@CurrentMonth.ToString("MMMM")</h2>
+                    <span>@CurrentMonth.Year</span>
+                </div>
+                <button class="nav-btn" @onclick="NextMonth">›</button>
+            </div>
+
+            <div class="calendar-grid">
+                <!-- Weekday Headers -->
+                <div class="weekday-header">Sun</div>
+                <div class="weekday-header">Mon</div>
+                <div class="weekday-header">Tue</div>
+                <div class="weekday-header">Wed</div>
+                <div class="weekday-header">Thu</div>
+                <div class="weekday-header">Fri</div>
+                <div class="weekday-header">Sat</div>
+
+                <!-- Empty slots for start of month -->
+                @for (int i = 0; i < StartOffset; i++)
+                {
+                    <div class="day-cell empty"></div>
+                }
+
+                <!-- Days -->
+                @for (int day = 1; day <= DaysInMonth; day++)
+                {
+                    int localDay = day; // capture value for lambda
+                    var date = new DateTime(CurrentMonth.Year, CurrentMonth.Month, localDay);
+                    bool isToday = date.Date == DateTime.Today;
+                    bool hasEntry = HasEntry(date);
+                    bool isSelected = SelectedDate.Date == date.Date;
+
+                    <button class="day-cell @(isToday ? "today" : "") @(isSelected ? "selected" : "")" 
+                            type="button"
+                            @onclick="() => SelectDate(localDay)">
+                        <span class="day-number">@localDay</span>
+                        @if (hasEntry)
+                        {
+                            <span class="entry-dot"></span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <span class="dot has-entry"></span> Has Entry
+                </div>
+                <div class="legend-item">
+                    <span class="dot today"></span> Today
+                </div>
+            </div>
+        </div>
+
+        <!-- Entries Side Panel -->
+        <div class="entries-card">
+            <h3>Entries for @SelectedDate.ToString("MMMM d")</h3>
+            
+            <div class="entries-list">
+                @if (DisplayedEntries.Any())
+                {
+                    @foreach (var entry in DisplayedEntries)
+                    {
+                        <div class="mini-entry-card" @onclick='() => Navigation.NavigateTo($"/journal/edit/{entry.Id}")' style="cursor: pointer;">
+                            <span class="entry-emoji">@(entry.Mood?.Emoji ?? "📄")</span>
+                            <div class="entry-info">
+                                <h4>@entry.Title</h4>
+                                <span class="entry-description">@entry.Preview</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-entries">
+                        <p>No entries for this day.</p>
+                        <button class="btn-create-small" @onclick='() => Navigation.NavigateTo($"/journal/create?date={SelectedDate:yyyy-MM-dd}")'>
+                            + Create Entry
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private DateTime CurrentMonth { get; set; } = DateTime.Today;
+    private DateTime SelectedDate { get; set; } = DateTime.Today;
+    private int DaysInMonth => DateTime.DaysInMonth(CurrentMonth.Year, CurrentMonth.Month);
+    private int StartOffset => (int)new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1).DayOfWeek;
+    private List<JournalApp.Models.JournalEntry> EntriesForMonth { get; set; } = new();
+
+    private IEnumerable<JournalApp.Models.JournalEntry> DisplayedEntries => 
+        EntriesForMonth.Where(e => e.Date.Date == SelectedDate.Date);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadEntries();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadEntries()
+    {
+        EntriesForMonth = await JournalService.GetEntriesForMonthAsync(CurrentMonth.Month, CurrentMonth.Year);
+    }
+
+    private async Task PrevMonth()
+    {
+        CurrentMonth = CurrentMonth.AddMonths(-1);
+        SelectedDate = new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1); 
+        await LoadEntries();
+    }
+
+    private async Task NextMonth()
+    {
+        CurrentMonth = CurrentMonth.AddMonths(1);
+        SelectedDate = new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1);
+        await LoadEntries();
+    }
+
+    private void SelectDate(int day)
+    {
+        SelectedDate = new DateTime(CurrentMonth.Year, CurrentMonth.Month, day);
+    }
+
+    private bool HasEntry(DateTime date)
+    {
+         return EntriesForMonth.Any(e => e.Date.Date == date.Date);
+    }
+
+    [Inject] NavigationManager Navigation { get; set; } = default!;
+
+    private void OpenEntry(string entryId)
+    {
+        // Navigate to NewEntry page but passing ID/Date to edit would be ideal. 
+        // Since NewEntry creates by Date, we can just navigate to create with date query param?
+        // Or better, if we have ID, pass it.
+        // But NewEntry checks by Date currently. 
+        // Let's rely on date navigation for now, or just assume user wants to edit for that day.
+        
+        // Actually, NewEntry checks JournalService.GetEntryByDateAsync(Date).
+        // So we just need to navigate to /journal/create with the date set? 
+        // But NewEntry creates a new instance.
+        
+        // Wait, current NewEntry logic:
+        // OnInitialized -> CheckEntryExists(Date). 
+        // So if we set Date, it loads.
+        // But NewEntry route is just `/journal/create`. It defaults to Today.
+        
+        // We need to pass the date to NewEntry.
+        // I should update NewEntry to accept a QueryParameter for 'Date'.
+        // For now, let's just assume we want to open it.
+        
+        // Let's implement query param support in NewEntry in a future step if needed. 
+        // For now, let's just redirect to entry view? No, we don't have a view page.
+        // We only have NewEntry (Editor).
+        
+        // Navigation.NavigateTo($"/journal/create?date={SelectedDate.ToString("yyyy-MM-dd")}");
+        // But NewEntry doesn't read query params yet.
+        
+        // Let's just create a quick "View Entry" helper or just Stub it?
+        // User asked "show the journal if i click the day".
+        // Let's make the list items clickable and for now just print to console until I wire up Create with Date.
+    }
+}

@@ -2,6 +2,10 @@ using Microsoft.Maui.Storage;
 
 namespace JournalApp.Services;
 
+/// <summary>
+/// Manages user authentication state and credential storage (PIN/Password).
+/// Using Preferences for simplified storage.
+/// </summary>
 public class AuthService
 {
     private const string PasswordKey = "MasterPassword";

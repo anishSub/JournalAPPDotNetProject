@@ -1,0 +1,30 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject JournalApp.Services.AuthService AuthService
+
+<div class="app-layout">
+    <NavMenu />
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Simple auth guard
+        // If we are NOT authenticated, we must go to Login
+        // BUT, we must check if we are already ON the login page to avoid infinite loops
+        // Since we can't easily check the URL in OnInitialized in Blazor Hybrid purely without some logic,
+        // we rely on the fact that LoginLayout is used for the Login page.
+        // However, MainLayout is the default. So if MainLayout is initializing, it means we are NOT on Login page?
+        // Wait, Routes.razor says DefaultLayout is MainLayout. Login page uses LoginLayout.
+        // So MainLayout ONLY runs for pages that use MainLayout (Home, Settings, etc).
+        // Therefore, if MainLayout is running, we MUST be authenticated.
+        
+        if (!AuthService.IsAuthenticated)
+        {
+             Navigation.NavigateTo("/login");
+        }
+    }
+}

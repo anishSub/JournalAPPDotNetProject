@@ -1,0 +1,228 @@
+@page "/journal/create"
+@page "/journal/edit/{EntryId}"
+
+<div class="editor-container">
+    <div class="editor-content">
+        <div style="margin-bottom: 1rem;">
+            <button class="btn-back" @onclick="GoBack" style="display: flex; align-items: center; gap: 0.5rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-weight: 500;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19l-7-7 7-7"></path>
+                </svg>
+                Back
+            </button>
+        </div>
+        <h2 class="page-title">Journal Editor</h2>
+
+        @if (!string.IsNullOrEmpty(LastError))
+        {
+            <div class="alert-warning" style="background-color: #fee2e2; border-color: #ef4444; color: #b91c1c;">
+                <div class="alert-icon">❌</div>
+                <div>
+                     <h4 style="font-weight: 600;">Error Detected</h4>
+                     <p>@LastError</p>
+                </div>
+            </div>
+        }
+
+        @if (_entryExists)
+        {
+            <div class="alert-warning">
+                <div class="alert-icon">⚠️</div>
+                <div>
+                    <h4 style="font-weight: 600; margin-bottom: 0.25rem;">Entry Already Exists for This Date</h4>
+                    <p>You can only create one journal entry per day. Please edit the existing entry instead or choose a different date.</p>
+                </div>
+            </div>
+        }
+
+        <div class="editor-grid">
+            <!-- Main Editor Area -->
+            <div class="editor-main">
+                <div class="content-card" style="display: flex; flex-direction: column; min-height: 600px;">
+                    <input type="text" 
+                           @bind="Title" 
+                           @bind:event="oninput" 
+                           placeholder="Entry Title..." 
+                           class="title-input" 
+                           style="border-bottom: 1px solid var(--border); margin-bottom: 1rem; padding-bottom: 0.5rem;" />
+                    
+                    <!-- Markdown Toolbar -->
+                    <div class="markdown-toolbar">
+                        <button type="button" @onclick='() => InsertMarkdown("**", "**")' title="Bold">B</button>
+                        <button type="button" @onclick='() => InsertMarkdown("*", "*")' title="Italic">I</button>
+                        <button type="button" @onclick='() => InsertMarkdown("# ", "")' title="Heading 1">H1</button>
+                        <button type="button" @onclick='() => InsertMarkdown("## ", "")' title="Heading 2">H2</button>
+                        <button type="button" @onclick='() => InsertMarkdown("- ", "")' title="List">List</button>
+                        <button type="button" @onclick='() => InsertMarkdown("- [ ] ", "")' title="Checklist">Task</button>
+                        <button type="button" @onclick='() => InsertMarkdown("\n```\n", "\n```\n")' title="Code Block">Code</button>
+                    </div>
+
+                    <!-- Markdown Textarea -->
+                    <textarea id="journal-editor" 
+                              @bind="Content" 
+                              @bind:event="oninput"
+                              placeholder="Write your journal entry here... (Markdown supported)"
+                              class="markdown-editor"></textarea>
+
+                    <div class="word-count" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                         <span>@GetWordCount() words</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Sidebar -->
+            <div class="editor-sidebar" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- Date & Category -->
+                <div class="content-card sidebar-section">
+                    <div>
+                        <h3 class="section-title">Date</h3>
+                        <input type="date" @bind="Date" @bind:after="CheckEntryExists" class="meta-input" />
+                    </div>
+                    
+                    <div class="timestamps">
+                        <p>Created: @CreatedAt</p>
+                        <p>Updated: @UpdatedAt</p>
+                    </div>
+                </div>
+
+                 <div class="content-card sidebar-section">
+                    <div>
+                        <h3 class="section-title">Category</h3>
+                         <select @bind="Category" class="meta-input">
+                            <option value="">Select category</option>
+                            @foreach (var cat in _categoryOptions)
+                            {
+                                <option value="@cat.ToLower()">@cat</option>
+                            }
+                        </select>
+                    </div>
+                 </div>
+
+                <!-- Moods -->
+                <div class="content-card sidebar-section">
+                    <h3 class="section-title">Primary Mood</h3>
+                    <select @bind="PrimaryMood" class="meta-input">
+                        <option value="">Select mood</option>
+                        @foreach (var mood in _moodOptions)
+                        {
+                            <option value="@mood.Value">@mood.Emoji @mood.Label</option>
+                        }
+                    </select>
+
+                    <div style="margin-top: 1.5rem;">
+                        <h3 class="section-title">Secondary Moods (Max 2)</h3>
+                        
+                        <div class="mood-group">
+                            <p class="mood-label">Positive</p>
+                            <div class="mood-grid">
+                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "positive"))
+                                {
+                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                        @mood.Emoji
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                         <div class="mood-group">
+                            <p class="mood-label">Neutral</p>
+                            <div class="mood-grid">
+                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "neutral"))
+                                {
+                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                        @mood.Emoji
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="mood-group">
+                            <p class="mood-label">Negative</p>
+                            <div class="mood-grid">
+                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "negative"))
+                                {
+                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                        @mood.Emoji
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="content-card sidebar-section">
+                    <h3 class="section-title">Tags</h3>
+                    <div class="tag-input-group">
+                         <input type="text" 
+                                @bind="TagInput" 
+                                @bind:event="oninput"
+                                @onkeyup="HandleTagKeyUp"
+                                placeholder="Add tag..." 
+                                class="meta-input" />
+                         <button class="btn-add" @onclick="AddTag">+</button>
+                    </div>
+
+                    @if (Tags.Any())
+                    {
+                        <div class="tags-list">
+                            @foreach (var tag in Tags)
+                            {
+                                <span class="tag-badge">
+                                    @tag
+                                    <button @onclick="() => RemoveTag(tag)">×</button>
+                                </span>
+                            }
+                        </div>
+                    }
+
+                    <div class="suggested-tags">
+                        @foreach (var tag in _suggestedTags.Where(t => !Tags.Contains(t)).Take(_showAllTags ? _suggestedTags.Count : 4))
+                        {
+                            <button class="btn-suggested" @onclick="() => AddSuggestedTag(tag)">+ @tag</button>
+                        }
+                    </div>
+
+                    @if (!_showAllTags && _suggestedTags.Count(t => !Tags.Contains(t)) > 4)
+                    {
+                         <button class="btn-show-more" @onclick="ShowAllTags">Show More</button>
+                    }
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="sidebar-actions">
+                    @if (string.IsNullOrEmpty(_existingId))
+                    {
+                        <button class="action-btn btn-save" @onclick="SaveEntry">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            Save Entry
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="action-btn btn-update" @onclick="SaveEntry">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                            Update Entry
+                        </button>
+                        <button class="action-btn btn-delete" @onclick="DeleteEntry">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                            Delete Entry
+                        </button>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+

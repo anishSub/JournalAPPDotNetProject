@@ -1,0 +1,171 @@
+@page "/login"
+@layout Components.Layout.LoginLayout
+@using System.ComponentModel.DataAnnotations
+@using JournalApp.Services
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="icon-circle">
+                <img src="images/logo.png" alt="JournalApp Logo" class="login-logo" />
+            </div>
+            <h1>@(_isSetupMode ? "Create Password" : (_isPinMode ? "Enter PIN" : "Welcome Back"))</h1>
+            <p>@(_isSetupMode ? "Set a secure password for your journal" : (_isPinMode ? "Use your quick access PIN" : "Enter your password to access JournalApp"))</p>
+        </div>
+
+        <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin" class="login-form">
+            <div class="form-group">
+                <label for="password">@(_isSetupMode ? "New Password" : (_isPinMode ? "PIN" : "Password"))</label>
+                <div class="password-input-wrapper">
+                    <input id="password" 
+                               type="@(_isPinMode ? "number" : (_showPassword ? "text" : "password"))" 
+                               @bind="_loginModel.Password" 
+                               class="form-control" 
+                               placeholder="@(_isSetupMode ? "Choose a password" : (_isPinMode ? "Enter PIN" : "Enter your password"))"
+                               maxlength="@(_isPinMode ? "4" : "50")" />
+                    
+                    @if (!_isPinMode) {
+                        <button type="button" class="toggle-password" @onclick="TogglePassword">
+                            @if (_showPassword)
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            }
+                        </button>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <p class="error-message">@_errorMessage</p>
+                }
+            </div>
+
+            <button type="submit" class="btn-primary" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner"></span> <span>@(_isSetupMode ? "Setting Password..." : "Authenticating...")</span>
+                }
+                else
+                {
+                    <span>@(_isSetupMode ? "Set Password" : "Sign In")</span>
+                }
+            </button>
+            
+            @if (_isPinMode)
+            {
+                 <div class="login-footer">
+                    <a href="#" @onclick="SwitchToPassword" @onclick:preventDefault>Use Password instead</a>
+                </div>
+            }
+        </EditForm>
+
+        <div class="login-footer">
+            <a href="#">Forgot your password?</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel _loginModel = new();
+    private bool _showPassword = false;
+    private bool _isLoading = false;
+    private bool _isSetupMode = false;
+    private bool _isPinMode = false;
+    private bool _hasPin = false;
+    private string _errorMessage = "";
+
+    [Inject] private AuthService AuthService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hasPassword = await AuthService.HasPasswordAsync();
+        _hasPin = await AuthService.HasPinAsync();
+        
+        if (!hasPassword)
+        {
+            _isSetupMode = true;
+        }
+        else if (_hasPin)
+        {
+            _isPinMode = true;
+        }
+    }
+
+    private void TogglePassword()
+    {
+        _showPassword = !_showPassword;
+    }
+    
+    private void SwitchToPassword()
+    {
+        _isPinMode = false;
+        _loginModel.Password = "";
+        _errorMessage = "";
+    }
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = "";
+        // Removed artificial delay for faster performance
+
+        try 
+        {
+            if (_isSetupMode)
+            {
+                if (string.IsNullOrWhiteSpace(_loginModel.Password) || _loginModel.Password.Length < 4)
+                {
+                    _errorMessage = "Password must be at least 4 characters.";
+                    _isLoading = false;
+                    return;
+                }
+
+                await AuthService.SetPasswordAsync(_loginModel.Password);
+                AuthService.LoginSuccess();
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                bool isValid = false;
+                if (_isPinMode)
+                {
+                     isValid = await AuthService.VerifyPinAsync(_loginModel.Password);
+                     if (!isValid) _errorMessage = "Incorrect PIN.";
+                }
+                else
+                {
+                    isValid = await AuthService.VerifyPasswordAsync(_loginModel.Password);
+                    if (!isValid) _errorMessage = "Incorrect password.";
+                }
+
+                if (isValid)
+                {
+                    AuthService.LoginSuccess();
+                    Navigation.NavigateTo("/");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+        }
+        
+        _isLoading = false;
+    }
+
+    private class LoginModel
+    {
+        [Required]
+        public string Password { get; set; } = "";
+    }
+}

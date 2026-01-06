@@ -66,43 +66,56 @@
 }
 
 .dark {
-    --background: #202020;
+    /* Blue Dark Theme Palette */
+    --background: #101828;
     --foreground: #fcfcfc;
-    --card: #333333;
-    /* Lighter than background */
+
+    /* Surfaces (Cards, Popovers) - Lighter Slate */
+    --card: #1d2939;
     --card-foreground: #fcfcfc;
-    --popover: #202020;
+    --popover: #101828;
     --popover-foreground: #fcfcfc;
+
+    /* Primary brand color - Keeping vivid blue */
     --primary: #2563eb;
     --primary-foreground: #ffffff;
-    --secondary: #444444;
+
+    /* Secondary/Muted - Slate tones */
+    --secondary: #344054;
     --secondary-foreground: #fcfcfc;
-    --muted: #444444;
-    --muted-foreground: #b4b4b4;
-    --accent: #444444;
+    --muted: #344054;
+    --muted-foreground: #94a3b8;
+    /* Slate-400 */
+    --accent: #1d2939;
     --accent-foreground: #fcfcfc;
+
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #444444;
-    --input: #444444;
-    --ring: #707070;
+
+    --border: #344054;
+    --input: #1d2939;
+    --input-background: #1d2939;
+    --ring: #3b82f6;
+
     --font-weight-medium: 500;
     --font-weight-normal: 400;
+
+    /* Charts */
     --chart-1: #3b82f6;
     --chart-2: #10b981;
     --chart-3: #f4a261;
     --chart-4: #a855f7;
     --chart-5: #f43f5e;
-    --sidebar: #333333;
+
+    /* Sidebar - Darker or matching background */
+    --sidebar: #0c1220;
     --sidebar-foreground: #fcfcfc;
     --sidebar-primary: #3b82f6;
     --sidebar-primary-foreground: #fcfcfc;
-    --sidebar-accent: #444444;
+    --sidebar-accent: #1d2939;
     --sidebar-accent-foreground: #fcfcfc;
-    --sidebar-border: #444444;
-    --sidebar-ring: #707070;
-    --input-background: #444444;
-    /* Fix inputs being white in dark mode */
+    --sidebar-border: #1f2937;
+    --sidebar-ring: #3b82f6;
 }
 
 html,
@@ -337,4 +350,93 @@ body {
     background-color: var(--app-bg);
     color: var(--text-main);
     border-color: var(--border);
+}
+
+/* ========================================= */
+/* SKELETON LOADING & HIGHLIGHT (New) */
+/* ========================================= */
+
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.skeleton-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dark .skeleton-card {
+    background: var(--card);
+}
+
+.skeleton-text {
+    height: 1rem;
+    background: #f6f7f8;
+    background-image: linear-gradient(to right,
+            #f6f7f8 0%,
+            #edeef1 20%,
+            #f6f7f8 40%,
+            #f6f7f8 100%);
+    background-repeat: no-repeat;
+    background-size: 800px 104px;
+    display: inline-block;
+    position: relative;
+    border-radius: 4px;
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: shimmer;
+    animation-timing-function: linear;
+}
+
+.dark .skeleton-text {
+    background: #444;
+    background-image: linear-gradient(to right,
+            #444 0%,
+            #555 20%,
+            #444 40%,
+            #444 100%);
+}
+
+.skeleton-text.title {
+    width: 60%;
+    height: 1.5rem;
+}
+
+.skeleton-text.preview {
+    width: 100%;
+}
+
+.skeleton-text.date {
+    width: 30%;
+    height: 0.8rem;
+}
+
+/* Search Highlight */
+.highlight {
+    background-color: #fde047;
+    /* Yellow-300 */
+    color: black;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-weight: 500;
+}
+
+.dark .highlight {
+    background-color: #fbbf24;
+    /* Amber-400 */
+    color: black;
 }

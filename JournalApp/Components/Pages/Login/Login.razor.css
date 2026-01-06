@@ -1,0 +1,218 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--app-bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 32rem;
+  /* max-w-lg - Increased from md */
+  margin: 0 auto;
+  background-color: var(--surface-card);
+  border-radius: 1rem;
+  /* rounded-2xl */
+  box-shadow: var(--shadow-xl);
+  padding: 2rem;
+  /* p-8 */
+  transition: background-color 0.3s ease;
+}
+
+/* Header Section */
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  /* w-16 */
+  height: 4rem;
+  /* h-16 */
+  border-radius: 9999px;
+  /* rounded-full */
+  background-color: var(--primary-light);
+  margin-bottom: 1rem;
+  color: var(--primary);
+}
+
+/* Adjust icon color in dark mode if needed via specific logic, 
+   but our variable mapping handles most. 
+   React code had: isDarkMode ? 'bg-blue-600' : 'bg-blue-100'
+   We mapped --primary-light to handle this.
+   React code had: isDarkMode ? 'text-white' : 'text-blue-600'
+   We might need a specific override for the icon text color in dark mode if --primary is used for BG.
+*/
+
+@media (prefers-color-scheme: dark) {
+  .icon-circle {
+    color: white;
+    /* Icon becomes white on dark blue bg */
+    background-color: var(--primary);
+    /* Deep blue bg */
+  }
+}
+
+.login-logo {
+  height: 3rem;
+  width: 3rem;
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.login-header h1 {
+  font-size: 1.875rem;
+  /* text-3xl */
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.login-header p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--text-main);
+  /* React said gray-700/300, mapped to text-main/secondary? React used specific grays. */
+  font-weight: 600;
+  font-size: 1.25rem;
+  /* Increased size */
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.form-control {
+
+  width: 100%;
+  padding: 0 1.25rem;
+  /* Horizontal padding only, height handles vertical */
+  border-radius: 0.75rem;
+  /* rounded-xl */
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  font-size: 1.125rem;
+  /* text-lg */
+  outline: none;
+  transition: all 0.2s;
+  height: 3.5rem;
+  /* Match button height */
+}
+
+.form-control::placeholder {
+  color: var(--input-placeholder);
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  /* ring-2 opacity-20 */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:hover {
+  color: var(--text-main);
+}
+
+.error-message {
+  color: #ef4444;
+  /* Red-500 */
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Button */
+.btn-primary {
+  width: 100%;
+  height: 3.5rem;
+  /* Match input height */
+  padding: 0;
+  /* Remove vertical padding, rely on flex centering */
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.login-footer a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}

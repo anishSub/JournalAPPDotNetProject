@@ -2,97 +2,412 @@ using SQLite;
 using JournalApp.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace JournalApp.Data
 {
+    /// <summary>
+    /// Manages SQLite database interactions for the relational schema.
+    /// Handles CRUD operations for all entities: User, Mood, Category, Tag, JournalEntry, EntryTag.
+    /// </summary>
     public class JournalDatabase
     {
         private SQLiteAsyncConnection _database;
+        private static bool _initialized = false;
+        private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
 
         async Task Init()
         {
-            if (_database is not null)
+            if (_initialized)
                 return;
 
-            _database = new SQLiteAsyncConnection(Constants.DatabasePath, Constants.Flags);
-            var result = await _database.CreateTableAsync<JournalEntry>();
+            await _initLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (_initialized)
+                    return;
+
+                _database = new SQLiteAsyncConnection(Constants.DatabasePath, Constants.Flags);
+                
+                // Create all tables
+                await _database.CreateTableAsync<User>().ConfigureAwait(false);
+                await _database.CreateTableAsync<Mood>().ConfigureAwait(false);
+                await _database.CreateTableAsync<Category>().ConfigureAwait(false);
+                await _database.CreateTableAsync<Tag>().ConfigureAwait(false);
+                await _database.CreateTableAsync<JournalEntry>().ConfigureAwait(false);
+                await _database.CreateTableAsync<EntryTag>().ConfigureAwait(false);
+
+                // Seed default data
+                await SeedDefaultData().ConfigureAwait(false);
+                
+                _initialized = true;
+            }
+            finally
+            {
+                _initLock.Release();
+            }
         }
+
+        private async Task SeedDefaultData()
+        {
+            // Create default user if none exists
+            var users = await _database.Table<User>().ToListAsync().ConfigureAwait(false);
+            if (!users.Any())
+            {
+                await _database.InsertAsync(new User
+                {
+                    Id = "default-user",
+                    Username = "Me",
+                    CreatedDate = DateTime.Now
+                }).ConfigureAwait(false);
+            }
+
+            // Seed moods if none exist
+            var moods = await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
+            if (!moods.Any())
+            {
+                var defaultMoods = new List<Mood>
+                {
+                    new Mood { Name = "Happy", Emoji = "😊", Color = "#10b981" },
+                    new Mood { Name = "Excited", Emoji = "🤩", Color = "#8b5cf6" },
+                    new Mood { Name = "Calm", Emoji = "😌", Color = "#60a5fa" },
+                    new Mood { Name = "Neutral", Emoji = "😐", Color = "#94a3b8" },
+                    new Mood { Name = "Sad", Emoji = "😔", Color = "#cbd5e1" },
+                    new Mood { Name = "Grateful", Emoji = "🙏", Color = "#f59e0b" },
+                    new Mood { Name = "Peaceful", Emoji = "🕊️", Color = "#22c55e" },
+                    new Mood { Name = "Negative", Emoji = "😞", Color = "#ef4444" }
+                };
+
+                await _database.InsertAllAsync(defaultMoods).ConfigureAwait(false);
+            }
+        }
+
+        #region JournalEntry CRUD
 
         public async Task<List<JournalEntry>> GetEntriesAsync()
         {
-            await Init();
-            return await _database.Table<JournalEntry>().ToListAsync();
+            await Init().ConfigureAwait(false);
+            var entries = await _database.Table<JournalEntry>().ToListAsync().ConfigureAwait(false);
+            
+            // OPTIMIZATION: Batch load all relations at once instead of one-by-one
+            await LoadBatchEntryRelations(entries).ConfigureAwait(false);
+            
+            return entries;
         }
         
-        // Month is 1-12, Year is YYYY
         public async Task<List<JournalEntry>> GetEntriesForMonthAsync(int month, int year)
         {
-            await Init();
-            // Since Date is stored as string (e.g. "Fri, May 12, 2025"), we might need LINQ filter on client side
-            // or better, parse it. For simplicity/robustness with current string format, we'll fetch all and filter in memory
-            // optimizing this would require changing Date to DateTime in Model, but we want to minimize UI breakage right now.
+            await Init().ConfigureAwait(false);
             
-            var all = await _database.Table<JournalEntry>().ToListAsync();
-            return all.Where(e => {
-                if(DateTime.TryParse(e.Date, out var dt))
-                {
-                    return dt.Month == month && dt.Year == year;
-                }
-                return false;
-            }).ToList();
+            // Calculate range to avoid using .Month/.Year in SQL expression (not supported)
+            var start = new DateTime(year, month, 1);
+            var end = start.AddMonths(1);
+
+            var entries = await _database.Table<JournalEntry>()
+                .Where(e => e.Date >= start && e.Date < end)
+                .ToListAsync().ConfigureAwait(false);
+            
+            await LoadBatchEntryRelations(entries).ConfigureAwait(false);
+            
+            return entries;
         }
 
-        public async Task<JournalEntry> GetEntryAsync(string id)
+        public async Task<JournalEntry?> GetEntryAsync(string id)
         {
-            await Init();
-            return await _database.Table<JournalEntry>().Where(i => i.Id == id).FirstOrDefaultAsync();
+            await Init().ConfigureAwait(false);
+            var entry = await _database.Table<JournalEntry>().Where(i => i.Id == id).FirstOrDefaultAsync().ConfigureAwait(false);
+            
+            if (entry != null)
+            {
+                await LoadEntryRelations(entry).ConfigureAwait(false);
+            }
+            
+            return entry;
+        }
+
+        public async Task<JournalEntry?> GetEntryByDateAsync(DateTime date)
+        {
+            await Init().ConfigureAwait(false);
+            
+            // Calculate range to avoid using .Date in SQL expression (not supported)
+            var start = date.Date;
+            var end = start.AddDays(1);
+
+            var entry = await _database.Table<JournalEntry>()
+                .Where(i => i.Date >= start && i.Date < end)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            
+            if (entry != null)
+            {
+                await LoadEntryRelations(entry).ConfigureAwait(false);
+            }
+            
+            return entry;
         }
 
         public async Task<int> SaveEntryAsync(JournalEntry item)
         {
-            await Init();
-            // Determine if update or insert based on if existing ID is found
-            var existing = await GetEntryAsync(item.Id);
+            await Init().ConfigureAwait(false);
+            
+            var existing = await GetEntryAsync(item.Id).ConfigureAwait(false);
+            int result;
+            
             if (existing != null)
-                return await _database.UpdateAsync(item);
+            {
+                item.ModifiedDate = DateTime.Now;
+                result = await _database.UpdateAsync(item).ConfigureAwait(false);
+            }
             else
-                return await _database.InsertAsync(item);
+            {
+                item.CreatedDate = DateTime.Now;
+                item.ModifiedDate = DateTime.Now;
+                if (string.IsNullOrEmpty(item.UserId))
+                    item.UserId = "default-user"; // Set default user
+                result = await _database.InsertAsync(item).ConfigureAwait(false);
+            }
+
+            // Save tags (many-to-many relationship)
+            await SaveEntryTags(item).ConfigureAwait(false);
+
+            return result;
         }
 
         public async Task<int> DeleteEntryAsync(JournalEntry item)
         {
-            await Init();
-            return await _database.DeleteAsync(item);
+            await Init().ConfigureAwait(false);
+            
+            // Delete associated entry-tags first
+            // Delete associated entry-tags first (Direct SQL because EntryTag has no PK)
+            await _database.ExecuteAsync("DELETE FROM EntryTag WHERE EntryId = ?", item.Id).ConfigureAwait(false);
+            
+            return await _database.DeleteAsync(item).ConfigureAwait(false);
         }
+
+        #endregion
+
+
+
+        #region Helper Methods
+
+        private async Task LoadEntryRelations(JournalEntry entry)
+        {
+            // Load Mood
+            if (entry.MoodId.HasValue)
+            {
+                entry.Mood = await _database.Table<Mood>()
+                    .Where(m => m.Id == entry.MoodId.Value)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+            }
+
+            // Load Category
+            if (entry.CategoryId.HasValue)
+            {
+                entry.Category = await _database.Table<Category>()
+                    .Where(c => c.Id == entry.CategoryId.Value)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+            }
+
+            // Load Tags
+            var entryTags = await _database.Table<EntryTag>()
+                .Where(et => et.EntryId == entry.Id)
+                .ToListAsync().ConfigureAwait(false);
+
+            entry.Tags = new List<Tag>();
+            foreach (var et in entryTags)
+            {
+                var tag = await _database.Table<Tag>()
+                    .Where(t => t.Id == et.TagId)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                
+                if (tag != null)
+                    entry.Tags.Add(tag);
+            }
+        }
+
+        // OPTIMIZED: Batch load relations for multiple entries (fixes N+1 query problem)
+        private async Task LoadBatchEntryRelations(List<JournalEntry> entries)
+        {
+            if (!entries.Any()) return;
+
+            // Batch load ALL moods, categories, tags at once
+            var allMoods = await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
+            var allCategories = await _database.Table<Category>().ToListAsync().ConfigureAwait(false);
+            var allTags = await _database.Table<Tag>().ToListAsync().ConfigureAwait(false);
+            var allEntryTags = await _database.Table<EntryTag>().ToListAsync().ConfigureAwait(false);
+
+            // Create lookup dictionaries
+            var moodDict = allMoods.ToDictionary(m => m.Id);
+            var categoryDict = allCategories.ToDictionary(c => c.Id);
+            var tagDict = allTags.ToDictionary(t => t.Id);
+            
+            var entryIds = entries.Select(e => e.Id).ToList();
+            var entryTagsDict = allEntryTags
+                .Where(et => entryIds.Contains(et.EntryId))
+                .GroupBy(et => et.EntryId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Assign relations to each entry using lookups (O(1) instead of O(n))
+            foreach (var entry in entries)
+            {
+                // Assign mood
+                if (entry.MoodId.HasValue && moodDict.ContainsKey(entry.MoodId.Value))
+                {
+                    entry.Mood = moodDict[entry.MoodId.Value];
+                }
+
+                // Assign category
+                if (entry.CategoryId.HasValue && categoryDict.ContainsKey(entry.CategoryId.Value))
+                {
+                    entry.Category = categoryDict[entry.CategoryId.Value];
+                }
+
+                // Assign tags
+                entry.Tags = new List<Tag>();
+                if (entryTagsDict.ContainsKey(entry.Id))
+                {
+                    foreach (var et in entryTagsDict[entry.Id])
+                    {
+                        if (tagDict.ContainsKey(et.TagId))
+                        {
+                            entry.Tags.Add(tagDict[et.TagId]);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task SaveEntryTags(JournalEntry entry)
+        {
+            // Remove existing entry-tag associations using direct SQL (safer for tables without PK)
+            await _database.ExecuteAsync("DELETE FROM EntryTag WHERE EntryId = ?", entry.Id).ConfigureAwait(false);
+
+            // Add new associations
+            foreach (var tag in entry.Tags)
+            {
+                await _database.InsertAsync(new EntryTag
+                {
+                    EntryId = entry.Id,
+                    TagId = tag.Id
+                }).ConfigureAwait(false);
+            }
+        }
+
+        #endregion
+
+
+
+
+
+
+        #region Mood CRUD
+
+        public async Task<List<Mood>> GetMoodsAsync()
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<Mood?> GetMoodByIdAsync(int id)
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<Mood>().Where(m => m.Id == id).FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        #endregion
+
+
+
+
+
+        #region Tag CRUD
+
+        public async Task<List<Tag>> GetTagsAsync(string userId)
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<Tag>().Where(t => t.UserId == userId).ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<Tag?> GetOrCreateTagAsync(string tagName, string userId)
+        {
+            await Init().ConfigureAwait(false);
+            
+            var existing = await _database.Table<Tag>()
+                .Where(t => t.Name == tagName && t.UserId == userId)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+
+            if (existing != null)
+                return existing;
+
+            var newTag = new Tag { Name = tagName, UserId = userId };
+            await _database.InsertAsync(newTag).ConfigureAwait(false);
+            
+            // Fetch with generated Id
+            return await _database.Table<Tag>()
+                .Where(t => t.Name == tagName && t.UserId == userId)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        #endregion
+
+
+
+
+
+        #region Category CRUD
+
+        public async Task<List<Category>> GetCategoriesAsync(string userId)
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<Category>().Where(c => c.UserId == userId).ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<int> SaveCategoryAsync(Category category)
+        {
+            await Init().ConfigureAwait(false);
+            if (category.Id != 0)
+            {
+                return await _database.UpdateAsync(category).ConfigureAwait(false);
+            }
+            else
+            {
+                return await _database.InsertAsync(category).ConfigureAwait(false);
+            }
+        }
+
+        #endregion
+
+
+
+
+
+        #region Search
 
         public async Task<List<JournalEntry>> SearchEntriesAsync(string query, string mood, string tag)
         {
-             await Init();
-             // Client-side filtering for simplicity with the complex string/list matching
-             // SQLite's LIKE is limited for the TagsString csv
-             
-             var all = await _database.Table<JournalEntry>().ToListAsync();
-             var filtered = all.AsEnumerable();
+            await Init().ConfigureAwait(false);
+            var allEntries = await GetEntriesAsync().ConfigureAwait(false); // This now uses batch loading!
+            var filtered = allEntries.AsEnumerable();
 
-             if (!string.IsNullOrWhiteSpace(query))
-             {
-                 filtered = filtered.Where(e => 
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                filtered = filtered.Where(e => 
                     (e.Title?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) || 
                     (e.Content?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false));
-             }
+            }
 
-             if (!string.IsNullOrWhiteSpace(mood) && mood != "All")
-             {
-                 // Mood comparison - checking Label or Emoji if needed, assuming Label here based on usage
-                 filtered = filtered.Where(e => e.MoodLabel == mood || e.Mood == mood); 
-             }
+            if (!string.IsNullOrWhiteSpace(mood) && mood != "All")
+            {
+                filtered = filtered.Where(e => e.MoodLabel == mood);
+            }
 
-             if (!string.IsNullOrWhiteSpace(tag) && tag != "All")
-             {
-                 filtered = filtered.Where(e => e.Tags.Contains(tag));
-             }
+            if (!string.IsNullOrWhiteSpace(tag) && tag != "All")
+            {
+                filtered = filtered.Where(e => e.Tags.Any(t => t.Name == tag));
+            }
 
-             return filtered.ToList();
+            return filtered.ToList();
         }
+
+        #endregion
     }
 }

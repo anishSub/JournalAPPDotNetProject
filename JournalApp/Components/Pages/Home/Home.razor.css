@@ -1,0 +1,176 @@
+.home-container {
+  min-height: 100vh;
+  padding: 2rem 0;
+  /* py-8 */
+  background-color: var(--app-bg);
+}
+
+.home-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  /* px-8 */
+}
+
+/* Header */
+.header-section {
+  margin-bottom: 2rem;
+  /* mb-8 */
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  /* mb-6 */
+}
+
+.header-top h2 {
+  font-size: 1.875rem;
+  /* text-3xl */
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.btn-new-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  /* rounded-lg */
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-new-entry:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Search Bar */
+.search-container {
+  position: relative;
+  max-width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--input-placeholder);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  /* pl-12 */
+  border-radius: 0.75rem;
+  /* rounded-xl */
+  border: 1px solid var(--border);
+  background-color: var(--surface-card);
+  color: var(--text-main);
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* Entries Grid */
+.entries-section h3 {
+  font-size: 1.25rem;
+  /* text-xl */
+  color: var(--text-secondary);
+  /* React: gray-700/300 */
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.entries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+/* Pagination */
+.pagination-container {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  /* or start as per design, design seems start/left? React code wrapped in div */
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background-color: var(--surface-card);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: var(--app-bg);
+  /* darker shade/lighter shade */
+  border-color: var(--border);
+}
+
+.page-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--app-bg);
+  /* gray-200/800 */
+}
+
+.page-btn.number {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.page-ellipsis {
+  color: var(--text-secondary);
+  padding: 0 0.5rem;
+}

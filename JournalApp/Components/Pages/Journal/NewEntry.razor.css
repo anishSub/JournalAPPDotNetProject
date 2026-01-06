@@ -1,0 +1,513 @@
+/* Layout */
+.editor-container {
+  min-height: 100vh;
+  padding: 2rem 0;
+  background-color: var(--app-bg);
+}
+
+.editor-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 2rem;
+}
+
+/* Warning Alert */
+.alert-warning {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid;
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+  background-color: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+:root[class~="dark"] .alert-warning {
+  background-color: rgba(113, 63, 18, 0.2);
+  border-color: #a16207;
+  color: #fde047;
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+}
+
+/* Layout Grid */
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .editor-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* Cards */
+.content-card {
+  background-color: var(--surface-card);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-xl);
+}
+
+/* Editor Inputs */
+.title-input {
+  width: 100%;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.title-input:focus {
+  border-color: var(--primary);
+}
+
+.title-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar-btn {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-btn:hover {
+  background-color: var(--app-bg);
+  color: var(--text-main);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 1.5rem;
+  background-color: var(--border);
+  margin: 0 0.25rem;
+}
+
+.editor-textarea {
+  width: 100%;
+  min-height: 500px;
+  padding: 1rem 0;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 1rem;
+  line-height: 1.625;
+  resize: none;
+  outline: none;
+}
+
+.editor-textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+.word-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Sidebar Section Headers */
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+/* Metadata Inputs */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.meta-input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  background-clip: padding-box;
+}
+
+/* Custom Icons for Inputs */
+select.meta-input,
+input[type="date"].meta-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+  /* Space for icon */
+}
+
+select.meta-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23717182' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+}
+
+input[type="date"].meta-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23717182' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3e%3cline x1='16' y1='2' x2='16' y2='6'/%3e%3cline x1='8' y1='2' x2='8' y2='6'/%3e%3cline x1='3' y1='10' x2='21' y2='10'/%3e%3c/svg%3e");
+}
+
+/* Dark Mode Icons (White/Lighter Stroke) */
+:root[class~="dark"] select.meta-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23e4e4e7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+}
+
+:root[class~="dark"] input[type="date"].meta-input {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23e4e4e7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3e%3cline x1='16' y1='2' x2='16' y2='6'/%3e%3cline x1='8' y1='2' x2='8' y2='6'/%3e%3cline x1='3' y1='10' x2='21' y2='10'/%3e%3c/svg%3e");
+}
+
+/* Ensure native date picker icon is hidden so we don't have duplicates */
+input[type="date"].meta-input::-webkit-calendar-picker-indicator {
+  display: flow-root;
+  /* Keeps it clickable but hidden visually or overlay it transparently */
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Parent container needs relative positioning for the absolute picker indicator to work if we go that route, 
+   but since meta-input is the input itself, we can't put children in it. 
+   Actually, the best way to keep the picker working while hiding the icon is opacity: 0 on the indicator 
+   and making it cover the right side or the whole input. 
+   
+   However, for simplicity and standard behavior where clicking anywhere opens it (in some browsers) or just the icon area:
+   Let's just hide the native icon and rely on the custom background. 
+   Note: In some browsers, hiding the indicator removes the click trigger. 
+   For now, we simply hide it. User can click the input to focus/open picker depending on browser.
+*/
+
+input[type="date"].meta-input::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+.meta-input {
+  position: relative;
+  /* Helper for the absolute positioning above if needed, though input can't really hold it */
+}
+
+/* Re-target the focus styles */
+.meta-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.timestamps {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Mood Buttons */
+.mood-group {
+  margin-bottom: 1rem;
+}
+
+.mood-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.mood-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mood-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--app-bg);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mood-btn:hover:not(:disabled) {
+  background-color: var(--border);
+  transform: scale(1.1);
+}
+
+.mood-btn.active {
+  background-color: var(--primary);
+  transform: scale(1.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.mood-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Tags */
+.tag-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-add {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: var(--primary-hover);
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.tag-badge button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--primary);
+  opacity: 0.7;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
+.tag-badge button:hover {
+  opacity: 1;
+}
+
+.suggested-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.btn-suggested {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  background-color: var(--app-bg);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-suggested:hover {
+  background-color: var(--border);
+}
+
+.btn-show-more {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.5rem;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: none;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-show-more:hover {
+  opacity: 0.8;
+}
+
+/* Action Buttons */
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-save {
+  background-color: var(--primary);
+}
+
+.btn-save:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-update {
+  background-color: #3b82f6;
+}
+
+.btn-update:hover {
+  background-color: #2563eb;
+}
+
+.btn-delete {
+  background-color: #ef4444;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+}
+
+/* Action Button SVG Size */
+.action-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Markdown Toolbar */
+.markdown-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown-toolbar button {
+  padding: 0.5rem 0.75rem;
+  background-color: var(--app-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.markdown-toolbar button:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Markdown Textarea */
+.markdown-editor {
+  width: 100%;
+  min-height: 500px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.markdown-editor::placeholder {
+  color: var(--input-placeholder);
+}

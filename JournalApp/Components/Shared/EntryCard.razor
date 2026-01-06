@@ -1,0 +1,89 @@
+@using JournalApp.Models
+@using System.Text.RegularExpressions
+
+<div class="entry-card group">
+    <div class="card-actions">
+        <!-- More Horizontal Icon -->
+        <button class="btn-more" aria-label="Options">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Entry.MoodEmoji))
+    {
+        <div class="mood-emoji">@Entry.MoodEmoji</div>
+    }
+
+    <h4 class="entry-title">
+        @if (string.IsNullOrEmpty(HighlightTerm))
+        {
+            @Entry.Title
+        }
+        else
+        {
+            @((MarkupString)GetHighlightedHtml(Entry.Title))
+        }
+    </h4>
+    <p class="entry-preview">
+        @if (string.IsNullOrEmpty(HighlightTerm))
+        {
+            @Entry.Preview
+        }
+        else
+        {
+            @((MarkupString)GetHighlightedHtml(Entry.Preview))
+        }
+    </p>
+    
+    <div class="card-footer" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+        
+        @if (Entry.Tags != null && Entry.Tags.Any())
+        {
+            <div class="entry-tags" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                @foreach (var tag in Entry.Tags)
+                {
+                    <span class="tag-badge" style="color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 500;">
+                        #@tag.Name
+                    </span>
+                }
+            </div>
+        }
+
+        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <p class="entry-date">@Entry.Date.ToString("D")</p>
+            <a href="journal/edit/@Entry.Id" class="btn-show-more">
+                Show More
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"></path>
+                    <path d="M12 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required JournalEntry Entry { get; set; }
+    
+    [Parameter]
+    public string HighlightTerm { get; set; } = "";
+
+    private string GetHighlightedHtml(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(HighlightTerm))
+            return text;
+
+        // Case-insensitive replace
+        return System.Text.RegularExpressions.Regex.Replace(
+            text, 
+            Regex.Escape(HighlightTerm), 
+            match => $"<span class=\"highlight\">{match.Value}</span>", 
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+    }
+}

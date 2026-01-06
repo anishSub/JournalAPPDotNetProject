@@ -1,0 +1,373 @@
+@page "/dashboard"
+@inject IJSRuntime JSRuntime
+@inject JournalApp.Services.IJournalService JournalService
+
+<div class="dashboard-container">
+    <div class="header-section">
+        <h2>Analytics Dashboard</h2>
+        <button class="btn-filter @(_showDateFilter ? "active" : "")" @onclick="ToggleDateFilter">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            Date Range Filter
+        </button>
+    </div>
+
+    @if (_showDateFilter)
+    {
+        <div class="filter-panel">
+            <h3>Filter Analytics by Date Range</h3>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label>Start Date</label>
+                    <input type="date" @bind="_startDate" />
+                </div>
+                <div class="filter-group">
+                    <label>End Date</label>
+                    <input type="date" @bind="_endDate" />
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-apply" @onclick="ApplyFilter">Apply Filter</button>
+                    <button class="btn-clear" @onclick="ClearFilter">Clear</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon-box blue"><span style="font-size:1.5rem">🔥</span></div>
+            <div class="stat-value">@_dailyStreak</div>
+            <div class="stat-label">Daily Streak</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon-box purple"><span style="font-size:1.5rem">🏆</span></div>
+            <div class="stat-value">@_longestStreak</div>
+            <div class="stat-label">Longest Streak</div>
+        </div>
+
+         <div class="stat-card">
+            <div class="icon-box red"><span style="font-size:1.5rem">📉</span></div>
+            <div class="stat-value">@_missedDays</div>
+            <div class="stat-label">Missed Days</div>
+        </div>
+         <div class="stat-card">
+            <div class="icon-box yellow"><span style="font-size:1.5rem">@_frequentMoodEmoji</span></div>
+            <div class="stat-value">@_frequentMood</div>
+            <div class="stat-label">Most Frequent Mood</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-layout">
+        <!-- Mood Pie Chart -->
+        <div class="chart-card mood-chart">
+            <h3>Mood Distribution</h3>
+            <div id="moodPieChart" style="width: 100%; min-height: 250px;"></div>
+        </div>
+
+        <!-- Tags Bar Chart -->
+        <div class="chart-card tags-chart">
+            <h3>Most Used Tags</h3>
+            <div id="tagsBarChart" style="width: 100%; min-height: 300px;"></div>
+        </div>
+    </div>
+
+    <!-- Words Line Chart -->
+    <div class="chart-card full-width">
+        <div class="chart-header">
+            <div>
+                <h3>Word Count Trend</h3>
+                <p class="chart-subtitle">Avg. 434 words/day</p>
+            </div>
+            <div class="chart-toggles">
+                <button type="button" class="@(_timePeriod == "week" ? "active" : "")" @onclick="@(() => UpdateTimePeriod("week"))">Week</button>
+                <button type="button" class="@(_timePeriod == "month" ? "active" : "")" @onclick="@(() => UpdateTimePeriod("month"))">Month</button>
+                <button type="button" class="@(_timePeriod == "year" ? "active" : "")" @onclick="@(() => UpdateTimePeriod("year"))">Year</button>
+            </div>
+        </div>
+        <div id="wordLineChart" style="width: 100%; min-height: 300px;"></div>
+    </div>
+</div>
+
+@code {
+    private bool _showDateFilter = false;
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private string _timePeriod = "week";
+    private bool _isDarkMode = false; // Should get from valid source
+    private List<JournalApp.Models.JournalEntry> _entries = new();
+
+    // Stats
+    private int _dailyStreak = 0;
+    private int _longestStreak = 0;
+    private int _missedDays = 0;
+    private string _frequentMood = "Neutral";
+    private string _frequentMoodEmoji = "😊"; 
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+             // Get theme state
+             _isDarkMode = await JSRuntime.InvokeAsync<bool>("isDarkTheme");
+             
+             // OPTIMIZATION: Fetch ALL data ONCE
+             await LoadDataAndStats();
+             StateHasChanged();
+        }
+    }
+
+    private void ToggleDateFilter()
+    {
+        _showDateFilter = !_showDateFilter;
+        if (_showDateFilter && _startDate == null && _endDate == null)
+        {
+            _endDate = DateTime.Today;
+            _startDate = DateTime.Today.AddDays(-30);
+        }
+    }
+
+    private async Task ApplyFilter()
+    {
+        // Re-fetch data based on range (Mock)
+        await RenderCharts();
+    }
+
+    private async Task ClearFilter()
+    {
+        _startDate = null;
+        _endDate = null;
+        await RenderCharts();
+    }
+
+    private async Task UpdateTimePeriod(string period)
+    {
+        _timePeriod = period;
+        await RenderWordCountChart();
+    }
+
+    private async Task LoadDataAndStats()
+    {
+        // 1. Fetch EVERYTHING once
+        var allEntries = await JournalService.GetAllEntriesAsync();
+        _entries = allEntries; // Store for charts filtering
+
+        // 2. Calculate Stats in-memory (Avoiding 4 extra DB calls)
+        CalculateStats(allEntries);
+        
+        // 3. Render Charts
+        await RenderChartsInternal(allEntries);
+    }
+
+    private void CalculateStats(List<JournalApp.Models.JournalEntry> entries)
+    {
+        // Streaks Logic (Replicated from JournalService to avoid re-fetching)
+        var dates = entries.Select(e => e.Date.Date).Distinct().OrderByDescending(d => d).ToList();
+        
+        if (!dates.Any())
+        {
+            _dailyStreak = 0;
+            _longestStreak = 0;
+            _frequentMood = "Neutral";
+            _frequentMoodEmoji = "😐";
+            _missedDays = 0;
+            return;
+        }
+
+        // Current Streak
+        var today = DateTime.Today;
+        var currentCheck = today;
+        if (dates.First() == today) currentCheck = today;
+        else if (dates.First() == today.AddDays(-1)) currentCheck = today.AddDays(-1);
+        else 
+        {
+            _dailyStreak = 0;
+            goto LongestStreakParams; // Skip to next calc
+        }
+
+        int streak = 0;
+        foreach (var date in dates)
+        {
+            if (date == currentCheck)
+            {
+                streak++;
+                currentCheck = currentCheck.AddDays(-1);
+            }
+            else if (date < currentCheck) break;
+        }
+        _dailyStreak = streak;
+
+        LongestStreakParams:
+        // Longest Streak
+        var datesAsc = dates.OrderBy(d => d).ToList();
+        int maxStreak = 0;
+        int curStreak = 0;
+        DateTime? lastDate = null;
+        foreach (var date in datesAsc)
+        {
+            if (lastDate == null || date == lastDate.Value.AddDays(1)) curStreak++;
+            else curStreak = 1;
+            
+            if (curStreak > maxStreak) maxStreak = curStreak;
+            lastDate = date;
+        }
+        _longestStreak = maxStreak;
+
+        // Frequent Mood
+        var mostFreq = entries
+            .Where(e => !string.IsNullOrEmpty(e.MoodLabel))
+            .GroupBy(e => e.MoodLabel)
+            .OrderByDescending(g => g.Count())
+            .FirstOrDefault();
+        _frequentMood = mostFreq?.Key ?? "Neutral";
+        _frequentMoodEmoji = GetEmojiForMood(_frequentMood);
+
+        // Missed Days (Current Month)
+        var entriesThisMonth = entries.Where(e => e.Date.Month == today.Month && e.Date.Year == today.Year);
+        var uniqueEntryDays = entriesThisMonth.Select(e => e.Date.Date).Where(d => d <= today).Distinct().Count();
+        _missedDays = Math.Max(0, today.Day - uniqueEntryDays);
+        
+        // Default "1" logic functionality
+        if (_dailyStreak == 0) _dailyStreak = 0;
+    }
+
+    private string GetEmojiForMood(string mood) => mood switch
+    {
+        "Happy" or "Positive" => "😊",
+        "Excited" => "🤩",
+        "Calm" or "Peaceful" => "😌",
+        "Neutral" => "😐",
+        "Sad" or "Negative" => "😔",
+        "Grateful" => "🙏",
+        _ => "😊"
+    };
+
+    private async Task RenderChartsInternal(List<JournalApp.Models.JournalEntry> allEntries)
+    {
+         // Filter Data (Date Range)
+        _entries = allEntries.Where(e => {
+            var dt = e.Date.Date;
+            bool afterStart = _startDate == null || dt >= _startDate.Value.Date;
+            bool beforeEnd = _endDate == null || dt <= _endDate.Value.Date;
+            return afterStart && beforeEnd;
+        }).ToList();
+
+        await RenderMoodChart();
+        await RenderTagsChart();
+        await RenderWordCountChart();
+    }
+    
+    // Stub for original RenderCharts to support button clicks re-filtering
+    private async Task RenderCharts()
+    {
+         var allEntries = await JournalService.GetAllEntriesAsync();
+         await RenderChartsInternal(allEntries);
+    }
+
+    private async Task RenderMoodChart()
+    {
+        var moodGroups = _entries
+            .Where(e => !string.IsNullOrEmpty(e.MoodLabel))
+            .GroupBy(e => e.MoodLabel)
+            .Select(g => new { name = g.Key, value = g.Count() })
+            .ToList();
+
+        // Map colors based on mood name (simple fallback)
+        var moodData = moodGroups.Select(g => new { 
+            g.name, 
+            g.value, 
+            color = GetColorForMood(g.name) 
+        }).ToArray();
+
+        await JSRuntime.InvokeVoidAsync("dashboardCharts.renderMoodPieChart", "moodPieChart", moodData, _isDarkMode);
+    }
+
+    private string GetColorForMood(string mood) => mood switch
+    {
+        "Happy" or "Positive" => "#2563eb", // Blue
+        "Excited" => "#8b5cf6", // Purple
+        "Calm" or "Peaceful" => "#10b981", // Green
+        "Neutral" => "#60a5fa", // Light Blue
+        "Sad" or "Negative" => "#cbd5e1", // Gray
+        "Grateful" => "#f59e0b", // Orange
+        _ => "#94a3b8" // Default
+    };
+
+    private async Task RenderTagsChart()
+    {
+        var allTags = _entries.SelectMany(e => e.Tags).ToList();
+        var tagGroups = allTags
+            .GroupBy(t => t.Name)
+            .Select(g => new { name = g.Key, count = g.Count() })
+            .OrderByDescending(g => g.count)
+            .Take(5)
+            .ToList();
+
+        var tagsData = tagGroups.Select((g, index) => new {
+            g.name,
+            g.count,
+            color = GetColorForTagIndex(index)
+        }).ToArray();
+
+        await JSRuntime.InvokeVoidAsync("dashboardCharts.renderTagsBarChart", "tagsBarChart", tagsData, _isDarkMode);
+    }
+
+    private string GetColorForTagIndex(int index)
+    {
+        var colors = new[] { "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899" };
+        return colors[index % colors.Length];
+    }
+
+    private async Task RenderWordCountChart()
+    {
+        // Filter for Time Period
+        DateTime cutoff = _timePeriod switch
+        {
+            "week" => DateTime.Today.AddDays(-6),
+            "month" => DateTime.Today.AddDays(-30),
+            "year" => DateTime.Today.AddMonths(-11), // Last 12 months
+            _ => DateTime.MinValue
+        };
+
+         var chartEntries = _entries.Where(e => e.Date.Date >= cutoff).ToList();
+
+        // Grouping logic
+        object[] wordData;
+
+        if (_timePeriod == "year")
+        {
+             // Group by Month
+             var grouped = chartEntries
+                .Select(e => new { Date = e.Date, WordCount = GetWordCount(e.Content) })
+                .GroupBy(x => new { x.Date.Year, x.Date.Month })
+                .Select(g => new { date = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM"), words = g.Sum(x => x.WordCount) })
+                .ToList();
+             wordData = grouped.ToArray();
+        }
+        else
+        {
+             // Group by Day (Week/Month)
+             var grouped = chartEntries
+                .Select(e => new { Date = e.Date, WordCount = GetWordCount(e.Content) })
+                .GroupBy(x => x.Date.Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new { date = g.Key.ToString("ddd d"), words = g.Sum(x => x.WordCount) })
+                .ToList();
+             wordData = grouped.ToArray();
+        }
+
+        await JSRuntime.InvokeVoidAsync("dashboardCharts.renderWordCountLineChart", "wordLineChart", wordData, _isDarkMode);
+    }
+
+    private int GetWordCount(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return 0;
+        
+        // Strip HTML tags to get plain text
+        var plainText = System.Text.RegularExpressions.Regex.Replace(content, "<[^>]+>", " ");
+        
+        return plainText.Split(new[] { ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Length;
+    }
+}

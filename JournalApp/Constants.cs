@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace JournalApp
+namespace JournalApp.Data
 {
     public static class Constants
     {

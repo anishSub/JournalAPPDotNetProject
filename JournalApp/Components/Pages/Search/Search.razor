@@ -1,0 +1,287 @@
+@page "/search"
+@inject JournalApp.Services.IJournalService JournalService
+@inject IJSRuntime JSRuntime
+@using JournalApp.Models
+
+<div class="search-page">
+    <div class="search-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Search Entries</h1>
+            <button class="btn-export" @onclick="() => _showExportModal = true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export to PDF
+            </button>
+        </div>
+
+        <!-- Search & Filter Card -->
+        <div class="search-card">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text"
+                       placeholder="Search by title or content..."
+                       @bind="SearchQuery"
+                       @bind:event="oninput"
+                       @onkeyup="PerformSearch" />
+            </div>
+
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Filter by Mood</label>
+                    <div class="select-wrapper">
+                         <select @bind="SelectedMood" @bind:after="PerformSearch">
+                            <option value="">All Moods</option>
+                            <option value="Happy">😊 Happy</option>
+                            <option value="Excited">🎉 Excited</option>
+                            <option value="Calm">😌 Calm</option>
+                            <option value="Grateful">🙏 Grateful</option>
+                        </select>
+                         <!-- Custom chevron built into CSS or could rely on browser -->
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Filter by Tag</label>
+                    <div class="select-wrapper">
+                        <select @bind="SelectedTag" @bind:after="PerformSearch">
+                            <option value="">All Tags</option>
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Health">Health</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Goals">Goals</option>
+                            <option value="Productivity">Productivity</option>
+                            <option value="Relationships">Relationships</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Count -->
+        <div class="results-count">
+            @if (string.IsNullOrWhiteSpace(SearchQuery) && string.IsNullOrWhiteSpace(SelectedMood) && string.IsNullOrWhiteSpace(SelectedTag))
+            {
+                <span>Recent Entries</span>
+            }
+            else
+            {
+                <span>@FilteredEntries.Count @(FilteredEntries.Count == 1 ? "entry" : "entries") found</span>
+            }
+        </div>
+
+        <!-- Entries List -->
+        <div class="entries-list">
+            @if (_isLoading)
+            {
+                <!-- Skeleton UI (Shimmer) -->
+                @for (int i = 0; i < 3; i++)
+                {
+                    <div class="skeleton-card">
+                        <div class="skeleton-text title"></div>
+                        <div class="skeleton-text preview"></div>
+                        <div class="skeleton-text date"></div>
+                    </div>
+                }
+            }
+            else if (FilteredEntries.Any())
+            {
+                @foreach (var entry in FilteredEntries)
+                {
+                    <JournalApp.Components.Shared.EntryCard Entry="@entry" HighlightTerm="@SearchQuery" />
+                }
+            }
+            else
+            {
+                <div class="no-results">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <h3>No entries found</h3>
+                    <p>Try adjusting your search criteria or filters.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    @if (_showExportModal)
+    {
+        <div class="modal-overlay" @onclick="() => _showExportModal = false">
+            <div class="modal-content" @onclick:stopPropagation>
+                <h3>Export Journals to PDF</h3>
+                
+                <div class="modal-form">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" @bind="_exportStartDate" />
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" @bind="_exportEndDate" />
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-primary" @onclick="ExportPdf">Export</button>
+                    <button class="btn-secondary" @onclick="() => _showExportModal = false">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+    <!-- Hidden Export Container -->
+    <!-- Hidden Export Container -->
+    <div id="export-container" style="display: none;">
+        <div style="padding: 20px; font-family: sans-serif; color: black; max-width: 800px; margin: 0 auto;">
+            <h1 style="text-align: center; color: #2563eb; margin-bottom: 5px;">Journal Entries</h1>
+            <p style="text-align: center; color: #666; margin-top: 0;">@_exportStartDate.ToString("MMM d, yyyy") - @_exportEndDate.ToString("MMM d, yyyy")</p>
+            <hr style="border: 1px solid #eee; margin: 20px 0;" />
+            
+            @foreach (var entry in ExportEntries)
+            {
+                <div style="margin-bottom: 40px; border-bottom: 1px solid #eee; padding-bottom: 20px; page-break-inside: avoid;">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 15px;">
+                        <h2 style="margin: 0; font-size: 24px; color: #334155;">@entry.Title</h2>
+                        <span style="font-size: 14px; color: #64748b;">@entry.Date</span>
+                    </div>
+                    <div style="font-size: 14px; color: #2563eb; margin-bottom: 15px;">
+                       <span style="font-size: 1.25em; margin-right: 5px;">@entry.Mood</span> 
+                       @(entry.Tags != null && entry.Tags.Any() ? " • " + string.Join(", ", entry.Tags) : "")
+                    </div>
+                    
+                    <!-- Content (Rendered Markdown) -->
+                    <div class="journal-content" style="font-size: 16px; line-height: 1.6; color: #1e293b;">
+                         @((MarkupString)Markdig.Markdown.ToHtml(entry.Content ?? ""))
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string SearchQuery { get; set; } = "";
+    private string SelectedMood { get; set; } = "";
+    private string SelectedTag { get; set; } = "";
+    private List<JournalEntry> FilteredEntries { get; set; } = new();
+    private bool _isLoading = false;
+
+    private bool _showExportModal = false;
+    private DateTime _exportStartDate = DateTime.Now.AddMonths(-1);
+    private DateTime _exportEndDate = DateTime.Now;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initial load of recent entries
+            await PerformSearch();
+        }
+    }
+
+    private async Task PerformSearch()
+    {
+        _isLoading = true;
+        StateHasChanged(); // Force UI update to show loading state
+        
+        // Small delay to let UI render the skeleton state
+        await Task.Delay(100);
+
+        try
+        {
+            FilteredEntries = await JournalService.SearchEntriesAsync(SearchQuery, SelectedMood, SelectedTag);
+            
+            // OPTIMIZATION: If the user hasn't typed/filtered anything, 
+            // don't show the entire database (scrolling issue). 
+            // Just show the Top 5 most recent entries as a "Quick Access" list.
+            if (string.IsNullOrWhiteSpace(SearchQuery) && 
+                string.IsNullOrWhiteSpace(SelectedMood) && 
+                string.IsNullOrWhiteSpace(SelectedTag))
+            {
+                FilteredEntries = FilteredEntries.OrderByDescending(e => e.Date).Take(5).ToList();
+            }
+            else
+            {
+                FilteredEntries = FilteredEntries.OrderByDescending(e => e.Date).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Search error: {ex.Message}");
+            FilteredEntries = new List<JournalEntry>();
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged(); // Force UI update
+        }
+    }
+
+    private string FormatDate(string dateStr)
+    {
+        if (DateTime.TryParse(dateStr, out var date))
+        {
+            return date.ToString("dddd, MMMM d, yyyy");
+        }
+        return dateStr;
+    }
+
+    // List to hold entries for export
+    private List<JournalEntry> ExportEntries { get; set; } = new();
+
+    private async Task ExportPdf()
+    {
+        // 1. Filter entries
+        var allEntries = await JournalService.GetAllEntriesAsync();
+        ExportEntries = allEntries.Where(e =>
+            e.Date.Date >= _exportStartDate.Date && e.Date.Date <= _exportEndDate.Date
+        ).OrderByDescending(e => e.Date).ToList();
+
+        if (!ExportEntries.Any())
+        {
+            await Application.Current.MainPage.DisplayAlert("No Entries", "No entries found for selected range.", "OK");
+            return;
+        }
+
+        // 2. Wait for UI to render the hidden table
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(100); 
+
+        // 3. Call JS to export (Get Base64)
+        try 
+        {
+            var base64 = await JSRuntime.InvokeAsync<string>("window.exportPdf.generate", "export-container");
+            
+            if (!string.IsNullOrEmpty(base64))
+            {
+                var pdfBytes = Convert.FromBase64String(base64);
+                
+                var fileName = $"Journal_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+                var filePath = Path.Combine(FileSystem.CacheDirectory, fileName);
+                
+                await File.WriteAllBytesAsync(filePath, pdfBytes);
+                
+                await Launcher.Default.OpenAsync(new OpenFileRequest
+                {
+                    Title = "Open Exported Journal",
+                    File = new ReadOnlyFile(filePath)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+             Console.WriteLine($"JS Export failed: {ex}");
+             await Application.Current.MainPage.DisplayAlert("Export Failed", $"Could not generate PDF. Error: {ex.Message}", "OK");
+        }
+
+        _showExportModal = false;
+    }
+}
