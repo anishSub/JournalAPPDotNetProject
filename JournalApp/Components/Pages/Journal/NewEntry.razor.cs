@@ -115,6 +115,10 @@ namespace JournalApp.Components.Pages.Journal
                 Content = existingEntry.Content;
                 Date = existingEntry.Date;
                 
+                // Load timestamps from existing entry
+                CreatedAt = existingEntry.CreatedDate.ToString("g");
+                UpdatedAt = existingEntry.ModifiedDate.ToString("g");
+                
                 // Mood defaults
                 PrimaryMood = _moodOptions.FirstOrDefault(m => m.Label == existingEntry.MoodLabel)?.Value ?? "";
                 
@@ -146,6 +150,11 @@ namespace JournalApp.Components.Pages.Journal
                 _existingId = existingEntry.Id;
                 Title = existingEntry.Title;
                 Content = existingEntry.Content;
+                
+                // Load timestamps from existing entry
+                CreatedAt = existingEntry.CreatedDate.ToString("g");
+                UpdatedAt = existingEntry.ModifiedDate.ToString("g");
+                
                 // Mood defaults
                 PrimaryMood = _moodOptions.FirstOrDefault(m => m.Label == existingEntry.MoodLabel)?.Value ?? "";
                 
@@ -181,6 +190,10 @@ namespace JournalApp.Components.Pages.Journal
                 Tags.Clear();
                 TagInput = "";
                 LastError = "";
+                
+                // Reset timestamps for new entry
+                CreatedAt = DateTime.Now.ToString("g");
+                UpdatedAt = DateTime.Now.ToString("g");
             }
             StateHasChanged();
         }
@@ -194,6 +207,13 @@ namespace JournalApp.Components.Pages.Journal
                 LastError = "Saving...";
                 await InvokeAsync(StateHasChanged);
 
+                // For updates, fetch the existing entry to preserve CreatedDate
+                JournalApp.Models.JournalEntry? existingEntry = null;
+                if (!string.IsNullOrEmpty(_existingId))
+                {
+                    existingEntry = await JournalService.GetEntryByIdAsync(_existingId);
+                }
+
                 // Build the entry object
                 var entry = new JournalApp.Models.JournalEntry
                 {
@@ -203,7 +223,9 @@ namespace JournalApp.Components.Pages.Journal
                     Date = Date,
                     Preview = Content.Length > 100 ? Content.Substring(0, 100) + "..." : Content,
                     UserId = "default-user",
-                    SecondaryMood = string.Join(",", SecondaryMoods)
+                    SecondaryMood = string.Join(",", SecondaryMoods),
+                    // Preserve CreatedDate if updating, otherwise let database set it
+                    CreatedDate = existingEntry?.CreatedDate ?? DateTime.Now
                 };
 
                 // Get or create Mood

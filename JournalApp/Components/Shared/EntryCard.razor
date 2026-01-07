@@ -1,5 +1,6 @@
 @using JournalApp.Models
 @using System.Text.RegularExpressions
+@using Markdig
 
 <div class="entry-card group">
     <div class="card-actions">
@@ -28,16 +29,17 @@
             @((MarkupString)GetHighlightedHtml(Entry.Title))
         }
     </h4>
-    <p class="entry-preview">
+    <div class="entry-preview markdown-preview">
         @if (string.IsNullOrEmpty(HighlightTerm))
         {
-            @Entry.Preview
+            @((MarkupString)Markdown.ToHtml(Entry.Preview ?? ""))
         }
         else
         {
-            @((MarkupString)GetHighlightedHtml(Entry.Preview))
+            @((MarkupString)GetHighlightedHtml(Markdown.ToPlainText(Entry.Preview ?? "")))
         }
-    </p>
+    </div>
+
     
     <div class="card-footer" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
         

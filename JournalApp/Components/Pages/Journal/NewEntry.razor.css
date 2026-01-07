@@ -47,13 +47,52 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
+  align-items: start;
+  /* Keep columns aligned at top */
 }
 
 @media (min-width: 1024px) {
   .editor-grid {
     grid-template-columns: 2fr 1fr;
+    max-height: calc(100vh - 200px);
+    /* Limit height to viewport */
+  }
+
+  /* Make the editor main area fixed height */
+  .editor-main {
+    height: calc(100vh - 200px);
+    overflow: hidden;
+    /* Content card handles its own scroll if needed */
+  }
+
+  /* Make the sidebar scrollable */
+  .editor-sidebar {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+    /* Space for scrollbar */
+  }
+
+  /* Custom scrollbar styling for sidebar */
+  .editor-sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .editor-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .editor-sidebar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  .editor-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
   }
 }
+
 
 /* Cards */
 .content-card {

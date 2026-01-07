@@ -78,6 +78,51 @@
   flex: 1;
 }
 
+/* Markdown styling within preview */
+.entry-preview.markdown-preview p {
+  margin: 0;
+  display: inline;
+}
+
+.entry-preview.markdown-preview h1,
+.entry-preview.markdown-preview h2,
+.entry-preview.markdown-preview h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  display: inline;
+  color: var(--text-main);
+}
+
+.entry-preview.markdown-preview strong {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.entry-preview.markdown-preview em {
+  font-style: italic;
+}
+
+.entry-preview.markdown-preview ul,
+.entry-preview.markdown-preview ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: inline-block;
+}
+
+.entry-preview.markdown-preview li {
+  display: inline;
+}
+
+.entry-preview.markdown-preview code {
+  background-color: var(--app-bg);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+
 .card-footer {
   display: flex;
   align-items: center;
