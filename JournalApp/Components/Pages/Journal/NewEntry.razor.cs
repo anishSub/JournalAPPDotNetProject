@@ -93,7 +93,7 @@ namespace JournalApp.Components.Pages.Journal
                      // But! If we are reusing the component, Date might be stale.
                      // On fresh load, Date is DateTime.Now.
                      // Ensure we check existance for WHATEVER date is current.
-                     await CheckEntryExists();
+                    await CheckEntryExists();
                 }
 
                 StateHasChanged(); 
@@ -134,7 +134,7 @@ namespace JournalApp.Components.Pages.Journal
                 {
                     SecondaryMoods = new List<string>();
                 }
-                 
+                
                 Tags = existingEntry.Tags.Select(t => t.Name).ToList() ?? new List<string>();
                 
                 _entryExists = true; // It exists
@@ -170,7 +170,7 @@ namespace JournalApp.Components.Pages.Journal
                 {
                     SecondaryMoods = new List<string>();
                 }
-                 
+                
                 Tags = existingEntry.Tags.Select(t => t.Name).ToList() ?? new List<string>();
                 
                 // We don't show the blocking warning anymore, we just let them edit.
@@ -256,8 +256,8 @@ namespace JournalApp.Components.Pages.Journal
             }
             catch (Exception ex)
             {
-                 LastError = $"Save Error: {ex.Message} -> {ex.InnerException?.Message}";
-                 await InvokeAsync(StateHasChanged);
+                LastError = $"Save Error: {ex.Message} -> {ex.InnerException?.Message}";
+                await InvokeAsync(StateHasChanged);
             }
         }
 
@@ -377,7 +377,7 @@ namespace JournalApp.Components.Pages.Journal
         protected void AddSuggestedTag(string tag)
         {
             Console.WriteLine($"[NewEntry] AddSuggestedTag called: {tag}");
-             try
+            try
             {
                 if (!Tags.Contains(tag))
                 {
@@ -407,14 +407,14 @@ namespace JournalApp.Components.Pages.Journal
 
         protected async Task InsertMarkdown(string prefix, string suffix)
         {
-             try
-             {
+            try
+            {
                 await JSRuntime.InvokeVoidAsync("window.editor.insertText", "journal-editor", prefix, suffix);
-             }
-             catch
-             {
+            }
+            catch
+            {
                  // Ignore JS errors if editor not initialized
-             }
+            }
         }
 
         protected void RemoveTag(string tag)

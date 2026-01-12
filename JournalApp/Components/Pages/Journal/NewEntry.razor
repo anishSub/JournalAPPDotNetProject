@@ -19,8 +19,8 @@
             <div class="alert-warning" style="background-color: #fee2e2; border-color: #ef4444; color: #b91c1c;">
                 <div class="alert-icon">❌</div>
                 <div>
-                     <h4 style="font-weight: 600;">Error Detected</h4>
-                     <p>@LastError</p>
+                    <h4 style="font-weight: 600;">Error Detected</h4>
+                    <p>@LastError</p>
                 </div>
             </div>
         }
@@ -41,11 +41,11 @@
             <div class="editor-main">
                 <div class="content-card" style="display: flex; flex-direction: column; min-height: 600px;">
                     <input type="text" 
-                           @bind="Title" 
-                           @bind:event="oninput" 
-                           placeholder="Entry Title..." 
-                           class="title-input" 
-                           style="border-bottom: 1px solid var(--border); margin-bottom: 1rem; padding-bottom: 0.5rem;" />
+                        @bind="Title" 
+                        @bind:event="oninput" 
+                        placeholder="Entry Title..." 
+                        class="title-input" 
+                        style="border-bottom: 1px solid var(--border); margin-bottom: 1rem; padding-bottom: 0.5rem;" />
                     
                     <!-- Markdown Toolbar -->
                     <div class="markdown-toolbar">
@@ -60,13 +60,13 @@
 
                     <!-- Markdown Textarea -->
                     <textarea id="journal-editor" 
-                              @bind="Content" 
-                              @bind:event="oninput"
-                              placeholder="Write your journal entry here... (Markdown supported)"
-                              class="markdown-editor"></textarea>
+                            @bind="Content" 
+                            @bind:event="oninput"
+                            placeholder="Write your journal entry here... (Markdown supported)"
+                            class="markdown-editor"></textarea>
 
                     <div class="word-count" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.5rem;">
-                         <span>@GetWordCount() words</span>
+                        <span>@GetWordCount() words</span>
                     </div>
                 </div>
             </div>
@@ -87,10 +87,10 @@
                     </div>
                 </div>
 
-                 <div class="content-card sidebar-section">
+                <div class="content-card sidebar-section">
                     <div>
                         <h3 class="section-title">Category</h3>
-                         <select @bind="Category" class="meta-input">
+                        <select @bind="Category" class="meta-input">
                             <option value="">Select category</option>
                             @foreach (var cat in _categoryOptions)
                             {
@@ -98,7 +98,7 @@
                             }
                         </select>
                     </div>
-                 </div>
+                </div>
 
                 <!-- Moods -->
                 <div class="content-card sidebar-section">
@@ -128,7 +128,7 @@
                             </div>
                         </div>
 
-                         <div class="mood-group">
+                        <div class="mood-group">
                             <p class="mood-label">Neutral</p>
                             <div class="mood-grid">
                                 @foreach (var mood in _secondaryMoods.Where(m => m.Type == "neutral"))
@@ -163,13 +163,13 @@
                 <div class="content-card sidebar-section">
                     <h3 class="section-title">Tags</h3>
                     <div class="tag-input-group">
-                         <input type="text" 
+                        <input type="text" 
                                 @bind="TagInput" 
                                 @bind:event="oninput"
                                 @onkeyup="HandleTagKeyUp"
                                 placeholder="Add tag..." 
                                 class="meta-input" />
-                         <button class="btn-add" @onclick="AddTag">+</button>
+                        <button class="btn-add" @onclick="AddTag">+</button>
                     </div>
 
                     @if (Tags.Any())
@@ -194,7 +194,7 @@
 
                     @if (!_showAllTags && _suggestedTags.Count(t => !Tags.Contains(t)) > 4)
                     {
-                         <button class="btn-show-more" @onclick="ShowAllTags">Show More</button>
+                        <button class="btn-show-more" @onclick="ShowAllTags">Show More</button>
                     }
                 </div>
 

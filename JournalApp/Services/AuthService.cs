@@ -38,14 +38,14 @@ public class AuthService
 
     public async Task SetPasswordAsync(string password)
     {
-         Preferences.Default.Set(PasswordKey, password);
-         await Task.CompletedTask;
+        Preferences.Default.Set(PasswordKey, password);
+        await Task.CompletedTask;
     }
 
     public async Task SetPinAsync(string pin)
     {
-         Preferences.Default.Set(PinKey, pin);
-         await Task.CompletedTask;
+        Preferences.Default.Set(PinKey, pin);
+        await Task.CompletedTask;
     }
     
     public void RemovePin()
