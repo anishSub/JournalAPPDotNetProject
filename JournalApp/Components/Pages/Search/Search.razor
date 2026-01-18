@@ -33,17 +33,16 @@
             </div>
 
             <div class="filters-grid">
+                <!-- Row 1: Mood and Tag -->
                 <div class="filter-group">
                     <label>Filter by Mood</label>
                     <div class="select-wrapper">
                          <select @bind="SelectedMood" @bind:after="PerformSearch">
                             <option value="">All Moods</option>
-                            <option value="Happy">😊 Happy</option>
-                            <option value="Excited">🎉 Excited</option>
-                            <option value="Calm">😌 Calm</option>
-                            <option value="Grateful">🙏 Grateful</option>
+                            <option value="Positive">🙂 Positive</option>
+                            <option value="Neutral">😐 Neutral</option>
+                            <option value="Negative">☹️ Negative</option>
                         </select>
-                         <!-- Custom chevron built into CSS or could rely on browser -->
                     </div>
                 </div>
 
@@ -63,11 +62,46 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Row 2: Date Filters -->
+            <div class="date-filters-row">
+                <div class="filter-group">
+                    <label>From Date</label>
+                    <input type="date" 
+                           class="date-input" 
+                           @bind="StartDate" 
+                           @bind:after="PerformSearch"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="filter-group">
+                    <label>To Date</label>
+                    <input type="date" 
+                           class="date-input" 
+                           @bind="EndDate" 
+                           @bind:after="PerformSearch"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+            </div>
+
+            <!-- Clear Filters Button (Centered Below) -->
+            @if (StartDate.HasValue || EndDate.HasValue || !string.IsNullOrWhiteSpace(SelectedMood) || !string.IsNullOrWhiteSpace(SelectedTag))
+            {
+                <div class="clear-filters-container">
+                    <button class="btn-clear-filters" @onclick="ClearFilters">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Clear Filters
+                    </button>
+                </div>
+            }
         </div>
 
         <!-- Results Count -->
         <div class="results-count">
-            @if (string.IsNullOrWhiteSpace(SearchQuery) && string.IsNullOrWhiteSpace(SelectedMood) && string.IsNullOrWhiteSpace(SelectedTag))
+            @if (string.IsNullOrWhiteSpace(SearchQuery) && string.IsNullOrWhiteSpace(SelectedMood) && string.IsNullOrWhiteSpace(SelectedTag) && !StartDate.HasValue && !EndDate.HasValue)
             {
                 <span>Recent Entries</span>
             }
@@ -171,6 +205,8 @@
     private string SearchQuery { get; set; } = "";
     private string SelectedMood { get; set; } = "";
     private string SelectedTag { get; set; } = "";
+    private DateTime? StartDate { get; set; } = null;
+    private DateTime? EndDate { get; set; } = null;
     private List<JournalEntry> FilteredEntries { get; set; } = new();
     private bool _isLoading = false;
 
@@ -199,12 +235,26 @@
         {
             FilteredEntries = await JournalService.SearchEntriesAsync(SearchQuery, SelectedMood, SelectedTag);
             
+            // Apply date range filter if specified
+            if (StartDate.HasValue || EndDate.HasValue)
+            {
+                FilteredEntries = FilteredEntries.Where(e =>
+                {
+                    var entryDate = e.Date.Date;
+                    bool afterStart = !StartDate.HasValue || entryDate >= StartDate.Value.Date;
+                    bool beforeEnd = !EndDate.HasValue || entryDate <= EndDate.Value.Date;
+                    return afterStart && beforeEnd;
+                }).ToList();
+            }
+            
             // OPTIMIZATION: If the user hasn't typed/filtered anything, 
             // don't show the entire database (scrolling issue). 
             // Just show the Top 5 most recent entries as a "Quick Access" list.
             if (string.IsNullOrWhiteSpace(SearchQuery) && 
                 string.IsNullOrWhiteSpace(SelectedMood) && 
-                string.IsNullOrWhiteSpace(SelectedTag))
+                string.IsNullOrWhiteSpace(SelectedTag) &&
+                !StartDate.HasValue &&
+                !EndDate.HasValue)
             {
                 FilteredEntries = FilteredEntries.OrderByDescending(e => e.Date).Take(5).ToList();
             }
@@ -223,6 +273,16 @@
             _isLoading = false;
             StateHasChanged(); // Force UI update
         }
+    }
+
+    private async Task ClearFilters()
+    {
+        SearchQuery = "";
+        SelectedMood = "";
+        SelectedTag = "";
+        StartDate = null;
+        EndDate = null;
+        await PerformSearch();
     }
 
     private string FormatDate(string dateStr)
@@ -269,11 +329,8 @@
                 
                 await File.WriteAllBytesAsync(filePath, pdfBytes);
                 
-                await Launcher.Default.OpenAsync(new OpenFileRequest
-                {
-                    Title = "Open Exported Journal",
-                    File = new ReadOnlyFile(filePath)
-                });
+                // Open directly (Preview app on Mac) instead of Share Sheet
+                await Launcher.Default.OpenAsync(new Uri($"file://{filePath}"));
             }
         }
         catch (Exception ex)

@@ -1,196 +1,160 @@
 @page "/settings"
 @inject IJSRuntime JSRuntime
-@using Plugin.LocalNotification
+
 @using JournalApp.Services
 @using System.Threading.Tasks
 @inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject ToastService ToastService
 
 <div class="settings-container">
     <div class="settings-content">
         <h1>Settings</h1>
 
-        <!-- Profile Section -->
-        <div class="settings-card">
-            <div class="card-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <h2>Profile</h2>
-            </div>
-
-            <div class="profile-info">
-                <div class="avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                </div>
-                <div class="profile-text">
-                    @if (_isEditingProfile)
-                    {
-                        <div class="edit-profile-form">
-                            <input type="text" @bind="_userName" class="profile-input" placeholder="Enter your name" />
-                            <button class="btn-save-profile" @onclick="SaveProfile">Save</button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="view-profile">
-                            <h3>@_userName</h3>
-                            <button class="btn-edit-profile-text" @onclick="ToggleEditProfile">Edit</button>
-                        </div>
-                        <p>Journaling since January 2026</p>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications Section -->
-        <div class="settings-card">
-            <div class="card-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                </svg>
-                <h2>Notifications</h2>
-            </div>
-
-            <div class="setting-item">
-                <div class="setting-label">
-                    <p class="setting-title">Enable Notifications</p>
-                    <p class="setting-desc">Receive notifications to write in your journal.</p>
-                </div>
-                <button class="toggle-switch @(_enableNotifications ? "active" : "")" @onclick="ToggleNotifications">
-                    <span class="toggle-slider"></span>
-                </button>
-            </div>
-
-            <div class="setting-item">
-                <div class="setting-label">
-                    <p class="setting-title">Daily Reminder</p>
-                    <p class="setting-desc">Get a reminder at a specific time each day.</p>
-                </div>
-                <button class="toggle-switch @(_dailyReminder ? "active" : "")" @onclick="ToggleDailyReminder">
-                    <span class="toggle-slider"></span>
-                </button>
-            </div>
-
-            @if (_dailyReminder)
-            {
-                <div class="setting-item no-border">
-                    <div class="setting-label">
-                        <p class="setting-title">Reminder Time</p>
+        <div class="settings-grid">
+            <!-- Left Column: Profile & Appearance -->
+            <div class="settings-column">
+                <!-- Profile Section -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <h2>Profile</h2>
                     </div>
-                     <input type="time" value="@_reminderTime.ToString("HH:mm")" @onchange="OnTimeChanged" class="time-input" />
+
+                    <div class="profile-info">
+                        <div class="avatar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="profile-text">
+                            @if (_isEditingProfile)
+                            {
+                                <div class="edit-profile-form">
+                                    <input type="text" @bind="_userName" class="profile-input" placeholder="Enter your name" />
+                                    <button class="btn-save-profile" @onclick="SaveProfile">Save</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="view-profile">
+                                    <h3>@_userName</h3>
+                                    <button class="btn-edit-profile-text" @onclick="ToggleEditProfile">Edit</button>
+                                </div>
+                                <p>Journaling since January 2026</p>
+                            }
+                        </div>
+                    </div>
                 </div>
-            }
-        </div>
 
-        <!-- Appearance Section -->
-        <div class="settings-card">
-            <div class="card-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-                </svg>
-                <h2>Appearance</h2>
-            </div>
-
-            <div class="appearance-content">
-                <p class="theme-label">Theme</p>
-                <div class="theme-toggles">
-                    <button class="theme-btn @(!_isDarkMode ? "active" : "")" @onclick="SetLightMode">
+                <!-- Appearance Section -->
+                <div class="settings-card">
+                    <div class="card-header">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
                         </svg>
-                        Light
-                    </button>
-                    <button class="theme-btn @(_isDarkMode ? "active" : "")" @onclick="SetDarkMode">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        <h2>Appearance</h2>
+                    </div>
+
+                    <div class="appearance-content">
+                        <p class="theme-label">Theme</p>
+                        <div class="theme-toggles">
+                            <button class="theme-btn @(!_isDarkMode ? "active" : "")" @onclick="SetLightMode">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                                Light
+                            </button>
+                            <button class="theme-btn @(_isDarkMode ? "active" : "")" @onclick="SetDarkMode">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                                Dark
+                            </button>
+                        </div>
+                        <p class="theme-desc">Select Light mode for clarity in bright environments, or Dark mode to reduce eye strain at night.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Security -->
+            <div class="settings-column">
+                <!-- Security Settings -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
-                        Dark
-                    </button>
-                </div>
-                <p class="theme-desc">Choose how JournalApp appears on your device</p>
-            </div>
-        </div>
+                        <h2>Security</h2>
+                    </div>
 
-        <!-- Security Settings -->
-        <div class="settings-card">
-            <div class="card-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <h2>Security</h2>
-            </div>
+                    <div class="setting-item">
+                        <div>
+                            <h3 class="setting-title">Change Password</h3>
+                            <p class="setting-desc">Update your main master password</p>
+                        </div>
+                        <button class="btn-secondary" @onclick="OpenChangePassword">Update</button>
+                    </div>
+                    
+                    @if (_isChangePasswordVisible)
+                    {
+                        <div class="security-form">
+                            <input type="password" @bind="_newPassword" placeholder="New Password" class="security-input" />
+                            <button class="btn-primary-small" @onclick="SaveNewPassword">Save</button>
+                        </div>
+                    }
 
-            <div class="setting-item">
-                <div>
-                    <h3 class="setting-title">Change Password</h3>
-                    <p class="setting-desc">Update your main master password</p>
-                </div>
-                <button class="btn-secondary" @onclick="OpenChangePassword">Update</button>
-            </div>
-            
-            @if (_isChangePasswordVisible)
-            {
-                <div class="security-form">
-                    <input type="password" @bind="_newPassword" placeholder="New Password" class="security-input" />
-                    <button class="btn-primary-small" @onclick="SaveNewPassword">Save</button>
-                </div>
-            }
+                    <div class="setting-item">
+                        <div>
+                            <h3 class="setting-title">Use PIN</h3>
+                            <p class="setting-desc">Enable quick access with a numeric PIN</p>
+                        </div>
+                        <button class="toggle-switch @(_hasPin ? "active" : "")" @onclick="TogglePin">
+                            <div class="toggle-slider"></div>
+                        </button>
+                    </div>
 
-            <div class="setting-item no-border">
-                <div>
-                    <h3 class="setting-title">Use PIN</h3>
-                    <p class="setting-desc">Enable quick access with a numeric PIN</p>
-                </div>
-                <button class="toggle-switch @(_hasPin ? "active" : "")" @onclick="TogglePin">
-                    <div class="toggle-slider"></div>
-                </button>
-            </div>
+                     @if (_isSetPinVisible)
+                    {
+                        <div class="security-form" style="margin-bottom: 1.5rem;">
+                            <input type="number" @bind="_newPin" placeholder="Enter 4-digit PIN" class="security-input" maxlength="4" />
+                            <button class="btn-primary-small" @onclick="SaveNewPin">Set PIN</button>
+                        </div>
+                    }
 
-             @if (_isSetPinVisible)
-            {
-                <div class="security-form">
-                    <input type="number" @bind="_newPin" placeholder="Enter 4-digit PIN" class="security-input" maxlength="4" />
-                    <button class="btn-primary-small" @onclick="SaveNewPin">Set PIN</button>
-                </div>
-            }
+                    <div class="setting-item">
+                        <div>
+                             <h3 class="setting-title" style="color: #ef4444;">Reset Data</h3>
+                             <p class="setting-desc">Clear all journal entries</p>
+                        </div>
+                        <button class="btn-secondary" style="color: #ef4444; border-color: #ef4444;" @onclick="ResetData">Reset Data</button>
+                    </div>
 
-            <div class="setting-item">
-                <div>
-                     <h3 class="setting-title" style="color: #ef4444;">Reset Data</h3>
-                     <p class="setting-desc">Clear all journal entries</p>
+                    <div class="setting-item no-border">
+                        <button class="btn-sign-out" @onclick="SignOut">Sign Out</button>
+                    </div>
                 </div>
-                <button class="btn-secondary" style="color: #ef4444; border-color: #ef4444;" @onclick="ResetData">Reset Data</button>
-            </div>
-
-            <div class="setting-item no-border">
-                <button class="btn-sign-out" @onclick="SignOut">Sign Out</button>
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    private bool _enableNotifications = true;
-    private bool _dailyReminder = true;
-    private TimeOnly _reminderTime = new TimeOnly(20, 0); // 20:00
     private bool _isDarkMode = false;
-    private const int NotificationId = 100;
     
     // Profile State
     private string _userName = "Journal User";
@@ -206,11 +170,7 @@
     protected override async Task OnInitializedAsync()
     {
         // ... existing loading code ...
-        _enableNotifications = Preferences.Get(nameof(_enableNotifications), true);
-        _dailyReminder = Preferences.Get(nameof(_dailyReminder), true);
-        
-        var savedTime = Preferences.Get(nameof(_reminderTime), _reminderTime.Ticks);
-        _reminderTime = new TimeOnly(savedTime);
+
         
         // Load Profile
         _userName = Preferences.Get("UserName", "Journal User");
@@ -235,11 +195,11 @@
             await AuthService.SetPasswordAsync(_newPassword);
             _newPassword = "";
             _isChangePasswordVisible = false;
-            await (Application.Current?.Windows[0].Page?.DisplayAlert("Success", "Password updated successfully", "OK") ?? Task.CompletedTask);
+            ToastService.ShowSuccess("Password updated successfully! 🔒");
         }
         else
         {
-             await (Application.Current?.Windows[0].Page?.DisplayAlert("Error", "Password must be at least 4 characters", "OK") ?? Task.CompletedTask);
+            ToastService.ShowError("Password must be at least 4 characters");
         }
     }
 
@@ -254,6 +214,7 @@
                 AuthService.RemovePin();
                 _hasPin = false;
                 _isSetPinVisible = false;
+                ToastService.ShowInfo("PIN removed successfully");
             }
         }
         else
@@ -272,11 +233,11 @@
             _hasPin = true;
             _newPin = "";
             _isSetPinVisible = false;
-            await (Application.Current?.Windows[0].Page?.DisplayAlert("Success", "PIN set successfully", "OK") ?? Task.CompletedTask);
+            ToastService.ShowSuccess("PIN set successfully! 📌");
         }
          else
         {
-             await (Application.Current?.Windows[0].Page?.DisplayAlert("Error", "PIN must be at least 4 digits", "OK") ?? Task.CompletedTask);
+            ToastService.ShowError("PIN must be at least 4 digits");
         }
     }
 
@@ -308,6 +269,7 @@
         }
         Preferences.Set("UserName", _userName);
         _isEditingProfile = false;
+        ToastService.ShowSuccess("Profile updated successfully! 👤");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -319,31 +281,7 @@
         }
     }
 
-    private async Task ToggleNotifications()
-    {
-        _enableNotifications = !_enableNotifications;
-        Preferences.Set(nameof(_enableNotifications), _enableNotifications);
-        
-        if (_enableNotifications)
-        {
-            await ShowAlert("Coming Soon", "Notifications are currently in development.");
-        }
-    }
 
-    private async Task ToggleDailyReminder()
-    {
-        _dailyReminder = !_dailyReminder;
-        Preferences.Set(nameof(_dailyReminder), _dailyReminder);
-    }
-
-    private async Task OnTimeChanged(ChangeEventArgs e)
-    {
-        if (TimeOnly.TryParse(e.Value?.ToString(), out var newTime))
-        {
-            _reminderTime = newTime;
-            Preferences.Set(nameof(_reminderTime), _reminderTime.Ticks);
-        }
-    }
 
     private async Task ResetData()
     {

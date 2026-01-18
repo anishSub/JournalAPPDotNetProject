@@ -4,6 +4,8 @@
 @inject NavigationManager Navigation
 @inject JournalApp.Services.IJournalService JournalService
 @inject JournalApp.Data.JournalDatabase JournalDatabase
+@inject JournalApp.Services.AuthService AuthService
+@inject JournalApp.Services.ToastService ToastService
 
 <div class="home-container">
     <div class="home-content">
@@ -97,12 +99,19 @@
 @code {
     private string SearchQuery { get; set; } = "";
     private int CurrentPage { get; set; } = 1;
-    private const int EntriesPerPage = 6;
+    private const int EntriesPerPage = 8;
     private List<JournalEntry> AllEntries = new();
 
     protected override async Task OnInitializedAsync()
     {
         AllEntries = await JournalService.GetAllEntriesAsync();
+
+        // Show welcome toast if user just logged in
+        if (AuthService.JustLoggedIn)
+        {
+            ToastService.ShowSuccess("Welcome back to Pana ! 📖");
+            AuthService.ClearLoginFlag();
+        }
 
         // SEED DATA: Disabled
         /*

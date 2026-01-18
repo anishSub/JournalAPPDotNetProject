@@ -1,6 +1,8 @@
 @page "/journal/create"
 @page "/journal/edit/{EntryId}"
 
+<NavigationLock OnBeforeInternalNavigation="ConfirmNavigation" />
+
 <div class="editor-container">
     <div class="editor-content">
         <div style="margin-bottom: 1rem;">
@@ -69,6 +71,21 @@
                         <span>@GetWordCount() words</span>
                     </div>
                 </div>
+
+                <!-- Live Preview Display -->
+                <div class="content-card" style="margin-top: 1.5rem;">
+                    <h3 class="section-title" style="border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem;">Live Preview</h3>
+                    <div class="markdown-preview" style="min-height: 100px;">
+                        @if (string.IsNullOrWhiteSpace(Content))
+                        {
+                            <p style="color: var(--text-secondary); font-style: italic;">Start writing to see preview...</p>
+                        }
+                        else
+                        {
+                            @((MarkupString)PreviewHtml)
+                        }
+                    </div>
+                </div>
             </div>
 
             <!-- Metadata Sidebar -->
@@ -103,60 +120,70 @@
                 <!-- Moods -->
                 <div class="content-card sidebar-section">
                     <h3 class="section-title">Primary Mood</h3>
-                    <select @bind="PrimaryMood" class="meta-input">
-                        <option value="">Select mood</option>
+                    
+                    <div class="mood-primary-toggle">
                         @foreach (var mood in _moodOptions)
                         {
-                            <option value="@mood.Value">@mood.Emoji @mood.Label</option>
+                            <button class="mood-btn-primary @(PrimaryMood == mood.Value ? "active" : "")" 
+                                    @onclick="() => PrimaryMood = mood.Value">
+                                <span class="mood-icon">@mood.Emoji</span>
+                                <span class="mood-text">@mood.Label</span>
+                            </button>
                         }
-                    </select>
-
-                    <div style="margin-top: 1.5rem;">
-                        <h3 class="section-title">Secondary Moods (Max 2)</h3>
-                        
-                        <div class="mood-group">
-                            <p class="mood-label">Positive</p>
-                            <div class="mood-grid">
-                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "positive"))
-                                {
-                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                        @mood.Emoji
-                                    </button>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="mood-group">
-                            <p class="mood-label">Neutral</p>
-                            <div class="mood-grid">
-                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "neutral"))
-                                {
-                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                        @mood.Emoji
-                                    </button>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="mood-group">
-                            <p class="mood-label">Negative</p>
-                            <div class="mood-grid">
-                                @foreach (var mood in _secondaryMoods.Where(m => m.Type == "negative"))
-                                {
-                                    <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                            @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                            disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                        @mood.Emoji
-                                    </button>
-                                }
-                            </div>
-                        </div>
-
                     </div>
+
+                    @if (!string.IsNullOrEmpty(PrimaryMood))
+                    {
+                        <div class="secondary-moods-section">
+                            <h3 class="section-title">Secondary Moods (Max 2)</h3>
+                            
+                            @if (PrimaryMood == "Positive")
+                            {
+                                <div class="mood-group">
+                                    <div class="mood-grid">
+                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "positive"))
+                                        {
+                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                @mood.Emoji
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else if (PrimaryMood == "Neutral")
+                            {
+                                <div class="mood-group">
+                                    <div class="mood-grid">
+                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "neutral"))
+                                        {
+                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                @mood.Emoji
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else if (PrimaryMood == "Negative")
+                            {
+                                <div class="mood-group">
+                                    <div class="mood-grid">
+                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "negative"))
+                                        {
+                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                @mood.Emoji
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <!-- Tags -->

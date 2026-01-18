@@ -55,6 +55,19 @@ namespace JournalApp.Models
         public string MoodLabel => Mood?.Name ?? string.Empty;
 
         [SQLite.Ignore]
-        public string MoodEmoji => Mood?.Emoji ?? string.Empty;
+        public string MoodEmoji 
+        {
+            get
+            {
+                var name = Mood?.Name ?? string.Empty;
+                return name switch
+                {
+                    "Positive" or "Happy" or "Excited" or "Peaceful" => "🙂",
+                    "Neutral" or "Calm" or "Grateful" => "😐",
+                    "Negative" or "Sad" or "Angry" => "☹️",
+                    _ => Mood?.Emoji ?? "🫥"
+                };
+            }
+        }
     }
 }

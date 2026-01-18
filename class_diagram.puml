@@ -1,0 +1,419 @@
+@startuml Journal_App_Class_Diagram
+
+' ============================================
+' STYLING AND CONFIGURATION
+' ============================================
+skinparam classAttributeIconSize 0
+skinparam backgroundColor white
+skinparam shadowing false
+
+' Class styling
+skinparam class {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    BorderThickness 2
+    FontSize 11
+    ArrowColor #424242
+}
+
+' Interface styling  
+skinparam interface {
+    BackgroundColor #FFF3E0
+    BorderColor #F57C00
+    BorderThickness 2
+}
+
+' Enum styling
+skinparam enum {
+    BackgroundColor #E8F5E9
+    BorderColor #388E3C
+}
+
+' Notes styling
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+}
+
+' Relationship colors
+skinparam ArrowColor #424242
+
+' ============================================
+' ENTITIES / DOMAIN MODELS
+' ============================================
+
+class User <<entity>> {
+    ' Attributes
+    - Id : string
+    - Username : string
+    - Email : string
+    - CreatedDate : DateTime
+    
+    ' No methods (Data class)
+}
+
+class JournalEntry <<entity>> {
+    ' Attributes
+    - Id : string
+    - Title : string
+    - Preview : string
+    - Content : string
+    - Date : DateTime
+    - SecondaryMood : string
+    - UserId : string
+    - MoodId : int?
+    - CategoryId : int?
+    - CreatedDate : DateTime
+    - ModifiedDate : DateTime
+    
+    ' Navigation Properties (not persisted)
+    - Mood : Mood
+    - Category : Category
+    - Tags : List<Tag>
+    
+    ' Computed Properties
+    + MoodLabel : string
+    + MoodEmoji : string
+}
+
+class Mood <<entity>> {
+    ' Attributes
+    - Id : int
+    - Name : string
+    - Emoji : string
+    - Color : string
+}
+
+class Category <<entity>> {
+    ' Attributes
+    - Id : int
+    - Name : string
+    - Color : string
+    - UserId : string
+}
+
+class Tag <<entity>> {
+    ' Attributes
+    - Id : int
+    - Name : string
+    - UserId : string
+}
+
+class EntryTag <<junction>> {
+    ' Attributes (Composite Key)
+    - EntryId : string
+    - TagId : int
+}
+
+' ============================================
+' SERVICES / BUSINESS LOGIC
+' ============================================
+
+interface IJournalService <<interface>> {
+    ' Entry Operations
+    + EntryExists(date : DateTime) : Task<bool>
+    + GetEntryByDateAsync(date : DateTime) : Task<JournalEntry?>
+    + GetEntryByIdAsync(id : string) : Task<JournalEntry?>
+    + GetAllEntriesAsync() : Task<List<JournalEntry>>
+    + GetEntriesForMonthAsync(month : int, year : int) : Task<List<JournalEntry>>
+    + SaveEntryAsync(entry : JournalEntry) : Task
+    + UpdateEntryAsync(entry : JournalEntry) : Task
+    + DeleteEntryAsync(id : string) : Task
+    
+    ' Search
+    + SearchEntriesAsync(query : string, mood : string, tag : string) : Task<List<JournalEntry>>
+    
+    ' Analytics
+    + GetCurrentStreakAsync() : Task<int>
+    + GetLongestStreakAsync() : Task<int>
+    + GetTotalEntriesAsync() : Task<int>
+    + GetMostFrequentMoodAsync() : Task<string>
+    
+    ' Data Management
+    + GetMoodsAsync() : Task<List<Mood>>
+    + GetTagsAsync() : Task<List<Tag>>
+    + GetOrCreateTagAsync(tagName : string) : Task<Tag?>
+}
+
+class JournalService {
+    ' Attributes
+    - _database : JournalDatabase
+    
+    ' Constructor
+    + JournalService(database : JournalDatabase)
+    
+    ' Entry Operations (Implements IJournalService)
+    + EntryExists(date : DateTime) : Task<bool>
+    + GetEntryByDateAsync(date : DateTime) : Task<JournalEntry?>
+    + GetEntryByIdAsync(id : string) : Task<JournalEntry?>
+    + GetAllEntriesAsync() : Task<List<JournalEntry>>
+    + GetEntriesForMonthAsync(month : int, year : int) : Task<List<JournalEntry>>
+    + SaveEntryAsync(entry : JournalEntry) : Task
+    + UpdateEntryAsync(entry : JournalEntry) : Task
+    + DeleteEntryAsync(id : string) : Task
+    
+    ' Search
+    + SearchEntriesAsync(query : string, mood : string, tag : string) : Task<List<JournalEntry>>
+    
+    ' Analytics  
+    + GetCurrentStreakAsync() : Task<int>
+    + GetLongestStreakAsync() : Task<int>
+    + GetTotalEntriesAsync() : Task<int>
+    + GetMostFrequentMoodAsync() : Task<string>
+    
+    ' Data Management
+    + GetMoodsAsync() : Task<List<Mood>>
+    + GetTagsAsync() : Task<List<Tag>>
+    + GetOrCreateTagAsync(tagName : string) : Task<Tag?>
+}
+
+class AuthService {
+    ' Constants
+    - PasswordKey : string = "MasterPassword"
+    - PinKey : string = "MasterPin"
+    
+    ' Attributes
+    + IsAuthenticated : bool
+    + JustLoggedIn : bool
+    
+    ' Methods
+    + LoginSuccess() : void
+    + ClearLoginFlag() : void
+    + Logout() : void
+    + HasPasswordAsync() : Task<bool>
+    + HasPinAsync() : Task<bool>
+    + SetPasswordAsync(password : string) : Task
+    + SetPinAsync(pin : string) : Task
+    + RemovePin() : void
+    + VerifyPasswordAsync(input : string) : Task<bool>
+    + VerifyPinAsync(input : string) : Task<bool>
+}
+
+enum ToastType {
+    Success
+    Info
+    Warning
+    Error
+}
+
+class ToastService {
+    ' Events
+    + OnShow : Action<string, ToastType>?
+    
+    ' Methods
+    + ShowToast(message : string, type : ToastType) : void
+    + ShowSuccess(message : string) : void
+    + ShowInfo(message : string) : void
+    + ShowWarning(message : string) : void
+    + ShowError(message : string) : void
+}
+
+' ============================================
+' DATA ACCESS LAYER
+' ============================================
+
+class JournalDatabase <<repository>> {
+    ' Attributes
+    - _database : SQLiteAsyncConnection
+    - _initialized : bool = false
+    - _initLock : SemaphoreSlim
+    
+    ' Initialization
+    - Init() : Task
+    - SeedDefaultData() : Task
+    
+    ' JournalEntry CRUD
+    + GetEntriesAsync() : Task<List<JournalEntry>>
+    + GetEntriesForMonthAsync(month : int, year : int) : Task<List<JournalEntry>>
+    + GetEntryAsync(id : string) : Task<JournalEntry?>
+    + GetEntryByDateAsync(date : DateTime) : Task<JournalEntry?>
+    + SaveEntryAsync(item : JournalEntry) : Task<int>
+    + DeleteEntryAsync(item : JournalEntry) : Task<int>
+    
+    ' Mood CRUD
+    + GetMoodsAsync() : Task<List<Mood>>
+    + GetMoodByIdAsync(id : int) : Task<Mood?>
+    
+    ' Tag CRUD
+    + GetTagsAsync(userId : string) : Task<List<Tag>>
+    + GetOrCreateTagAsync(tagName : string, userId : string) : Task<Tag?>
+    
+    ' Category CRUD
+    + GetCategoriesAsync(userId : string) : Task<List<Category>>
+    + SaveCategoryAsync(category : Category) : Task<int>
+    
+    ' Search
+    + SearchEntriesAsync(query : string, mood : string, tag : string) : Task<List<JournalEntry>>
+    
+    ' Helper Methods
+    - LoadEntryRelations(entry : JournalEntry) : Task
+    - LoadBatchEntryRelations(entries : List<JournalEntry>) : Task
+    - SaveEntryTags(entry : JournalEntry) : Task
+}
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+
+' --- REALIZATION (Interface Implementation) ---
+IJournalService <|.. JournalService : <<realize>>
+
+' --- COMPOSITION (Strong ownership, lifecycle dependency) ---
+' JournalService owns JournalDatabase (cannot exist without it)
+JournalService *-- "1" JournalDatabase : - _database
+
+' User owns Categories and Tags (cannot exist without user)
+User "1" *-- "0..*" Category : owns >
+User "1" *-- "0..*" Tag : owns >
+
+' JournalEntry owns EntryTag associations (if entry deleted, associations deleted)
+JournalEntry "1" *-- "0..*" EntryTag : has >
+
+' --- ASSOCIATION (Uses/Has relationship) ---
+' User has many JournalEntries
+User "1" -- "0..*" JournalEntry : creates >
+
+' JournalEntry references Mood (optional)
+JournalEntry "0..*" --> "0..1" Mood : has mood >
+
+' JournalEntry references Category (optional)
+JournalEntry "0..*" --> "0..1" Category : belongs to >
+
+' Tag participates in many-to-many with JournalEntry
+Tag "1" -- "0..*" EntryTag : tagged in >
+
+' --- AGGREGATION (Weak ownership, can exist independently) ---
+' JournalEntry aggregates Tags (tags can exist without entries)
+JournalEntry "0..*" o-- "0..*" Tag : - Tags
+
+' --- DEPENDENCY (Uses temporarily) ---
+' JournalDatabase depends on all entities for CRUD operations
+JournalDatabase ..> User : <<use>>
+JournalDatabase ..> JournalEntry : <<use>>
+JournalDatabase ..> Mood : <<use>>
+JournalDatabase ..> Category : <<use>>
+JournalDatabase ..> Tag : <<use>>
+JournalDatabase ..> EntryTag : <<use>>
+
+
+' ToastService depends on ToastType
+ToastService ..> ToastType : <<use>>
+
+' ============================================
+' EXTERNAL DEPENDENCIES
+' ============================================
+
+class "Preferences\n(Device Storage)" as Preferences <<external>> {
+    + Get(key : string, default : string) : string
+    + Set(key : string, value : string) : void
+    + Remove(key : string) : void
+}
+
+' AuthService depends on device Preferences (NOT database)
+AuthService ..> Preferences : <<use>>
+
+
+' ============================================
+' NOTES AND ANNOTATIONS
+' ============================================
+
+note right of IJournalService
+  **Interface**
+  Defines contract for
+  business logic layer.
+  Follows Dependency
+  Inversion principle.
+end note
+
+note bottom of JournalEntry
+  **Aggregate Root**
+  Central entity with
+  relationships to all
+  other domain models.
+  
+  Navigation properties
+  are lazy-loaded.
+end note
+
+note right of EntryTag
+  **Junction Table**
+  Many-to-Many relationship
+  between JournalEntry and Tag.
+  No primary key, composite key
+  of (EntryId, TagId).
+end note
+
+note top of JournalDatabase
+  **Repository Pattern**
+  Data Access Layer
+  Encapsulates SQLite operations.
+  Implements batch loading
+  optimization (N+1 prevention).
+end note
+
+note left of User
+  **Entity**
+  Represents user account.
+  Currently single-user app
+  with "default-user" ID.
+end note
+
+note bottom of AuthService
+  **Stateful Service**
+  Manages authentication state.
+  
+  **IMPORTANT:** Uses device
+  Preferences (NOT database)
+  for security credentials.
+  
+  Supports both Password
+  and PIN authentication.
+end note
+
+note right of Preferences
+  **External System**
+  Device-level secure storage
+  (Keychain/SharedPreferences).
+  
+  NOT part of SQLite database.
+  Provides platform-specific
+  credential security.
+end note
+
+note top of ToastService
+  **Observer Pattern**
+  Uses event-driven architecture
+  for UI notifications.
+end note
+
+' ============================================
+' LEGEND
+' ============================================
+legend bottom left
+  **UML Relationships:**
+  ─────────|>: Realization (Interface)
+  ──────────: Association
+  ────────o: Aggregation (weak ownership)
+  ────────*: Composition (strong ownership)
+  - - - - - >: Dependency (uses)
+  
+  **Multiplicity:**
+  1: Exactly one
+  0..1: Zero or one
+  0..*: Zero to many
+  1..*: One to many
+  
+  **Visibility:**
+  + Public
+  - Private
+  # Protected
+  ~ Package
+  
+  **Stereotypes:**
+  <<entity>>: Domain model
+  <<interface>>: Contract definition
+  <<repository>>: Data access
+  <<junction>>: Join table
+end legend
+
+@enduml

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using JournalApp.Services;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Routing;
 
 namespace JournalApp.Components.Pages.Journal
 {
@@ -21,16 +22,86 @@ namespace JournalApp.Components.Pages.Journal
         [Inject]
         public IJSRuntime JSRuntime { get; set; } = default!;
 
-        public string Title { get; set; } = "";
-        public string Content { get; set; } = "";
+        [Inject]
+        public JournalApp.Services.ToastService ToastService { get; set; } = default!;
+
+        // dirty tracking
+        private bool _isDirty = false;
+        private string _title = "";
+        private string _content = "";
+        private string _category = "";
+        private string _primaryMood = "";
+        private string _tagInput = "";
+
+        public string Title 
+        { 
+            get => _title; 
+            set 
+            {
+                if (_title != value)
+                {
+                    _title = value;
+                    _isDirty = true;
+                }
+            }
+        }
+
+        public string Content 
+        { 
+            get => _content; 
+            set 
+            {
+                if (_content != value)
+                {
+                    _content = value;
+                    _isDirty = true;
+                }
+            }
+        }
+        
+        // Computed property for Live Preview
+        public string PreviewHtml => Markdig.Markdown.ToHtml(_content ?? "");
+
         public DateTime Date { get; set; } = DateTime.Now;
         public string CreatedAt { get; set; } = DateTime.Now.ToString("g");
         public string UpdatedAt { get; set; } = DateTime.Now.ToString("g");
-        public string Category { get; set; } = "";
-        public string PrimaryMood { get; set; } = "";
+        
+        public string Category 
+        { 
+            get => _category; 
+            set 
+            {
+                if (_category != value)
+                {
+                    _category = value;
+                    _isDirty = true;
+                }
+            }
+        }
+
+        public string PrimaryMood 
+        { 
+            get => _primaryMood; 
+            set 
+            {
+                if (_primaryMood != value)
+                {
+                    _primaryMood = value;
+                    _isDirty = true;
+                    SecondaryMoods.Clear(); // Clear secondary moods when switching category
+                }
+            }
+        }
+
         public List<string> SecondaryMoods { get; set; } = new();
         public List<string> Tags { get; set; } = new();
-        public string TagInput { get; set; } = "";
+        
+        public string TagInput 
+        { 
+            get => _tagInput; 
+            set { _tagInput = value; } // Inputting tags doesn't dirty the form until Added
+        }
+
         protected bool _showAllTags = false;
         protected bool _entryExists = false;
         public string LastError { get; set; } = ""; // Debugging helper
@@ -137,7 +208,9 @@ namespace JournalApp.Components.Pages.Journal
                 
                 Tags = existingEntry.Tags.Select(t => t.Name).ToList() ?? new List<string>();
                 
+                
                 _entryExists = true; // It exists
+                _isDirty = false; // Reset dirty state after loading
             }
         }
 
@@ -183,9 +256,9 @@ namespace JournalApp.Components.Pages.Journal
                 _entryExists = false; 
                 
                 // CRITICAL: Clear strict form state to avoid showing "Today's" data on "Yesterday's" new page
-                Title = "";
-                Content = "";
-                PrimaryMood = "";
+                _title = "";
+                _content = "";
+                _primaryMood = "";
                 SecondaryMoods.Clear();
                 Tags.Clear();
                 TagInput = "";
@@ -195,6 +268,7 @@ namespace JournalApp.Components.Pages.Journal
                 CreatedAt = DateTime.Now.ToString("g");
                 UpdatedAt = DateTime.Now.ToString("g");
             }
+            _isDirty = false; // Reset dirty state after loading
             StateHasChanged();
         }
 
@@ -204,8 +278,25 @@ namespace JournalApp.Components.Pages.Journal
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(Title))
+                {
+                    ToastService.ShowError("Please add a title to your entry!");
+                    LastError = "Title is required.";
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(PrimaryMood))
+                {
+                    ToastService.ShowError("How are you feeling? Please select a mood!");
+                    LastError = "Mood is required.";
+                    return;
+                }
+
                 LastError = "Saving...";
                 await InvokeAsync(StateHasChanged);
+
+                // Determine if this is a new entry or update
+                bool isUpdate = !string.IsNullOrEmpty(_existingId);
 
                 // For updates, fetch the existing entry to preserve CreatedDate
                 JournalApp.Models.JournalEntry? existingEntry = null;
@@ -252,11 +343,24 @@ namespace JournalApp.Components.Pages.Journal
                 }
 
                 await JournalService.SaveEntryAsync(entry);
+                
+                // Show appropriate toast notification
+                if (isUpdate)
+                {
+                    ToastService.ShowSuccess("Journal entry updated successfully! ✏️");
+                }
+                else
+                {
+                    ToastService.ShowSuccess("Journal entry saved successfully! 📝");
+                }
+                
+                _isDirty = false; // Saved successfully
                 Navigation.NavigateTo("/");
             }
             catch (Exception ex)
             {
                 LastError = $"Save Error: {ex.Message} -> {ex.InnerException?.Message}";
+                ToastService.ShowError("Failed to save journal entry. Please try again.");
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -275,11 +379,13 @@ namespace JournalApp.Components.Pages.Journal
 
                 await JournalService.DeleteEntryAsync(_existingId);
                 
+                ToastService.ShowSuccess("Journal entry deleted successfully! 🗑️");
                 Navigation.NavigateTo("/");
             }
             catch (Exception ex)
             {
                 LastError = $"Delete Error: {ex.Message}";
+                ToastService.ShowError("Failed to delete journal entry. Please try again.");
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -290,14 +396,9 @@ namespace JournalApp.Components.Pages.Journal
         protected class MoodOption { public string Value { get; set; } = ""; public string Label { get; set; } = ""; public string Emoji { get; set; } = ""; }
         protected List<MoodOption> _moodOptions = new()
         {
-            new MoodOption { Value = "happy", Label = "Happy", Emoji = "😊" },
-            new MoodOption { Value = "excited", Label = "Excited", Emoji = "🎉" },
-            new MoodOption { Value = "calm", Label = "Calm", Emoji = "😌" },
-            new MoodOption { Value = "neutral", Label = "Neutral", Emoji = "😐" },
-            new MoodOption { Value = "sad", Label = "Sad", Emoji = "😢" },
-            new MoodOption { Value = "anxious", Label = "Anxious", Emoji = "😰" },
-            new MoodOption { Value = "angry", Label = "Angry", Emoji = "😠" },
-            new MoodOption { Value = "grateful", Label = "Grateful", Emoji = "🙏" }
+            new MoodOption { Value = "Positive", Label = "Positive", Emoji = "😊" },
+            new MoodOption { Value = "Neutral", Label = "Neutral", Emoji = "😐" },
+            new MoodOption { Value = "Negative", Label = "Negative", Emoji = "😞" }
         };
 
         protected class SecondaryMood { public string Value { get; set; } = ""; public string Emoji { get; set; } = ""; public string Type { get; set; } = ""; }
@@ -333,6 +434,19 @@ namespace JournalApp.Components.Pages.Journal
             return await JournalService.EntryExists(date);
         }
 
+        private async Task ConfirmNavigation(LocationChangingContext context)
+        {
+            if (_isDirty)
+            {
+                var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "You have unsaved changes. Discard them?");
+                
+                if (!confirmed)
+                {
+                    context.PreventNavigation();
+                }
+            }
+        }
+
         protected async Task ToggleSecondaryMood(string moodValue)
         {
             try
@@ -341,10 +455,12 @@ namespace JournalApp.Components.Pages.Journal
                 if (SecondaryMoods.Contains(moodValue))
                 {
                     SecondaryMoods.Remove(moodValue);
+                    _isDirty = true;
                 }
                 else if (SecondaryMoods.Count < 2)
                 {
                     SecondaryMoods.Add(moodValue);
+                    _isDirty = true;
                 }
                 await InvokeAsync(StateHasChanged);
             }
@@ -364,6 +480,7 @@ namespace JournalApp.Components.Pages.Journal
                 {
                     Tags.Add(TagInput.Trim());
                     TagInput = "";
+                    _isDirty = true;
                     await InvokeAsync(StateHasChanged);
                 }
             }
@@ -382,6 +499,7 @@ namespace JournalApp.Components.Pages.Journal
                 if (!Tags.Contains(tag))
                 {
                     Tags.Add(tag);
+                    _isDirty = true;
                     StateHasChanged();
                 }
             }
@@ -420,6 +538,7 @@ namespace JournalApp.Components.Pages.Journal
         protected void RemoveTag(string tag)
         {
             Tags.Remove(tag);
+            _isDirty = true;
             StateHasChanged();
         }
 

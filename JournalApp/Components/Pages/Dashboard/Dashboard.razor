@@ -75,6 +75,46 @@
     </div>
 
     <!-- Words Line Chart -->
+    <!-- Mood Heatmap (Year in Pixels) -->
+    <div class="chart-card full-width">
+        <div class="chart-header">
+            <div>
+                <h3>Year in Pixels</h3>
+                <p class="chart-subtitle">Daily mood history for @DateTime.Now.Year</p>
+            </div>
+            <div class="legend" style="display: flex; gap: 1rem; align-items: center; font-size: 0.85rem; color: var(--text-secondary);">
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #10b981;"></span> Positive</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #94a3b8;"></span> Neutral</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #ef4444;"></span> Negative</span>
+            </div>
+        </div>
+        
+        <div class="heatmap-container" style="overflow-x: auto; padding-bottom: 0.5rem;">
+            <div style="display: flex; gap: 1rem; margin: 0 auto; width: fit-content;">
+                @foreach (var month in GetHeatmapData())
+                {
+                    <div class="heatmap-month" style="display: flex; flex-direction: column; gap: 4px;">
+                        <!-- Month Grid -->
+                        <div class="heatmap-grid" style="display: grid; grid-template-rows: repeat(7, 16px); grid-auto-flow: column; gap: 4px; height: 140px;">
+                            @foreach (var day in month.Days)
+                            {
+                                <div class="heatmap-cell @GetClassForHeatmap(day)" 
+                                     title="@(day.IsPlaceholder ? "" : $"{day.Date:MMM dd, yyyy}: {day.Mood ?? "No Entry"}")"
+                                     style="@(string.IsNullOrEmpty(day.Mood) ? "" : $"background-color: {GetColorForHeatmap(day.Mood)}")">
+                                </div>
+                            }
+                        </div>
+                        <!-- Month Label -->
+                        <span style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; display: block; width: 100%;">
+                            @month.MonthName
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Words Line Chart -->
     <div class="chart-card full-width">
         <div class="chart-header">
             <div>
@@ -270,11 +310,11 @@
     {
         var moodGroups = _entries
             .Where(e => !string.IsNullOrEmpty(e.MoodLabel))
-            .GroupBy(e => e.MoodLabel)
+            .GroupBy(e => GetMoodCategory(e.MoodLabel))
             .Select(g => new { name = g.Key, value = g.Count() })
             .ToList();
 
-        // Map colors based on mood name (simple fallback)
+        // Map colors based on category
         var moodData = moodGroups.Select(g => new { 
             g.name, 
             g.value, 
@@ -284,15 +324,20 @@
         await JSRuntime.InvokeVoidAsync("dashboardCharts.renderMoodPieChart", "moodPieChart", moodData, _isDarkMode);
     }
 
-    private string GetColorForMood(string mood) => mood switch
+    private string GetMoodCategory(string label) => label switch
     {
-        "Happy" or "Positive" => "#2563eb", // Blue
-        "Excited" => "#8b5cf6", // Purple
-        "Calm" or "Peaceful" => "#10b981", // Green
-        "Neutral" => "#60a5fa", // Light Blue
-        "Sad" or "Negative" => "#cbd5e1", // Gray
-        "Grateful" => "#f59e0b", // Orange
-        _ => "#94a3b8" // Default
+        "Positive" or "Happy" or "Excited" or "Peaceful" => "Positive",
+        "Neutral" or "Calm" or "Grateful" => "Neutral",
+        "Negative" or "Sad" or "Angry" => "Negative",
+        _ => "Neutral"
+    };
+
+    private string GetColorForMood(string category) => category switch
+    {
+        "Positive" => "#10b981", // Green
+        "Neutral" => "#94a3b8", // Gray
+        "Negative" => "#ef4444", // Red
+        _ => "#94a3b8"
     };
 
     private async Task RenderTagsChart()
@@ -349,6 +394,7 @@
         else
         {
              // Group by Day (Week/Month)
+
              var grouped = chartEntries
                 .Select(e => new { Date = e.Date, WordCount = GetWordCount(e.Content) })
                 .GroupBy(x => x.Date.Date)
@@ -370,4 +416,69 @@
         
         return plainText.Split(new[] { ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
+
+    // --- Heatmap Logic ---
+    private class HeatmapDay
+    {
+        public DateTime Date { get; set; }
+        public string? Mood { get; set; }
+        public bool IsPlaceholder { get; set; } = false;
+    }
+
+    private class HeatmapMonthGroup
+    {
+        public string MonthName { get; set; } = "";
+        public List<HeatmapDay> Days { get; set; } = new();
+    }
+
+    private List<HeatmapMonthGroup> GetHeatmapData()
+    {
+        var result = new List<HeatmapMonthGroup>();
+        var currentYear = DateTime.Today.Year;
+        // Pre-fetch entries for performance
+        var entryDict = _entries.Where(e => e.Date.Year == currentYear)
+                                .GroupBy(e => e.Date.Date)
+                                .ToDictionary(g => g.Key, g => g.First());
+
+        for (int month = 1; month <= 12; month++)
+        {
+            var firstDayOfMonth = new DateTime(currentYear, month, 1);
+            var daysInMonth = DateTime.DaysInMonth(currentYear, month);
+            var monthGroup = new HeatmapMonthGroup 
+            { 
+                MonthName = firstDayOfMonth.ToString("MMM"),
+                Days = new List<HeatmapDay>()
+            };
+
+            // Add actual days (Starting from 1st slot, no alignment to weekday)
+            for (int day = 1; day <= daysInMonth; day++)
+            {
+                var date = new DateTime(currentYear, month, day);
+                string? mood = null;
+                if (entryDict.TryGetValue(date, out var entry))
+                {
+                    mood = entry.MoodLabel;
+                }
+                monthGroup.Days.Add(new HeatmapDay { Date = date, Mood = mood });
+            }
+
+            result.Add(monthGroup);
+        }
+        return result;
+    }
+    
+    private string GetClassForHeatmap(HeatmapDay day)
+    {
+        if (day.IsPlaceholder) return "heatmap-placeholder";
+        if (string.IsNullOrEmpty(day.Mood)) return "heatmap-empty";
+        return "heatmap-filled";
+    }
+
+    private string GetColorForHeatmap(string? mood) => mood switch
+    {
+        "Positive" or "Happy" or "Excited" or "Peaceful" => "#10b981", // Green
+        "Neutral" or "Calm" or "Grateful" => "#94a3b8", // Gray/Blueish
+        "Negative" or "Sad" => "#ef4444", // Red
+        _ => "transparent"
+    };
 }

@@ -63,22 +63,23 @@ namespace JournalApp.Data
             }
 
             // Seed moods if none exist
-            var moods = await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
-            if (!moods.Any())
+            // Seed moods
+            var existingMoods = await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
+            
+            var requiredMoods = new List<Mood>
             {
-                var defaultMoods = new List<Mood>
-                {
-                    new Mood { Name = "Happy", Emoji = "😊", Color = "#10b981" },
-                    new Mood { Name = "Excited", Emoji = "🤩", Color = "#8b5cf6" },
-                    new Mood { Name = "Calm", Emoji = "😌", Color = "#60a5fa" },
-                    new Mood { Name = "Neutral", Emoji = "😐", Color = "#94a3b8" },
-                    new Mood { Name = "Sad", Emoji = "😔", Color = "#cbd5e1" },
-                    new Mood { Name = "Grateful", Emoji = "🙏", Color = "#f59e0b" },
-                    new Mood { Name = "Peaceful", Emoji = "🕊️", Color = "#22c55e" },
-                    new Mood { Name = "Negative", Emoji = "😞", Color = "#ef4444" }
-                };
+                new Mood { Name = "Positive", Emoji = "😊", Color = "#10b981" },
+                new Mood { Name = "Neutral", Emoji = "😐", Color = "#94a3b8" },
+                new Mood { Name = "Negative", Emoji = "😞", Color = "#ef4444" }
+            };
 
-                await _database.InsertAllAsync(defaultMoods).ConfigureAwait(false);
+            foreach (var required in requiredMoods)
+            {
+                // Check if mood exists by name
+                if (!existingMoods.Any(m => m.Name == required.Name))
+                {
+                    await _database.InsertAsync(required).ConfigureAwait(false);
+                }
             }
         }
 
@@ -397,7 +398,14 @@ namespace JournalApp.Data
 
             if (!string.IsNullOrWhiteSpace(mood) && mood != "All")
             {
-                filtered = filtered.Where(e => e.MoodLabel == mood);
+                if (mood == "Positive")
+                    filtered = filtered.Where(e => e.MoodLabel == "Positive" || e.MoodLabel == "Happy" || e.MoodLabel == "Excited" || e.MoodLabel == "Peaceful");
+                else if (mood == "Neutral")
+                     filtered = filtered.Where(e => e.MoodLabel == "Neutral" || e.MoodLabel == "Calm" || e.MoodLabel == "Grateful");
+                else if (mood == "Negative")
+                     filtered = filtered.Where(e => e.MoodLabel == "Negative" || e.MoodLabel == "Sad" || e.MoodLabel == "Angry");
+                else
+                    filtered = filtered.Where(e => e.MoodLabel == mood);
             }
 
             if (!string.IsNullOrWhiteSpace(tag) && tag != "All")

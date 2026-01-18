@@ -61,8 +61,27 @@
   /* Make the editor main area fixed height */
   .editor-main {
     height: calc(100vh - 200px);
-    overflow: hidden;
-    /* Content card handles its own scroll if needed */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+  }
+
+  /* Scrollbar for editor main */
+  .editor-main::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .editor-main::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .editor-main::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  .editor-main::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
   }
 
   /* Make the sidebar scrollable */
@@ -311,6 +330,62 @@ input[type="date"].meta-input::-webkit-calendar-picker-indicator {
   margin-bottom: 1rem;
 }
 
+.mood-primary-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mood-btn-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 0;
+  /* Allow shrinking */
+}
+
+/* Icons */
+.mood-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.mood-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Responsive adjustment for very small screens (like sidebar on mobile) */
+@container sidebar (max-width: 250px) {
+  .mood-primary-toggle {
+    grid-template-columns: 1fr;
+    /* Stack them if super narrow */
+  }
+
+  .mood-btn-primary {
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .mood-icon {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+  }
+}
+
 .mood-label {
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -346,6 +421,14 @@ input[type="date"].meta-input::-webkit-calendar-picker-indicator {
   background-color: var(--primary);
   transform: scale(1.1);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+
+.mood-btn-primary.active {
+  background-color: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+  transform: scale(1.05);
 }
 
 .mood-btn:disabled {

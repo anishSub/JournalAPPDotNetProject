@@ -6,8 +6,73 @@
 
 .settings-content {
   max-width: 896px;
-  /* max-w-4xl */
+  /* Default for single column */
   margin: 0 auto;
+}
+
+/* Default Layout (Mobile/Small Screens) */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Grid Layout for Large Screens */
+@media (min-width: 1280px) {
+  .settings-content {
+    max-width: 1600px;
+    /* Expand for grid */
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+    /* Let cards be natural height */
+  }
+
+  /* Right column wrapper */
+  .settings-column:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Security card - Natural Height */
+  .settings-column:last-child .settings-card {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+  }
+
+  /* Sign Out Button - Consistent Spacing */
+  .settings-column:last-child .settings-card .setting-item:last-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  /* Make Theme Buttons Bigger on Large Screens */
+  .theme-toggles {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .theme-btn {
+    width: 250px;
+    padding: 1.75rem 1rem;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+}
+
+.settings-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-column .settings-card:last-child {
+  margin-bottom: 0;
 }
 
 .settings-content h1 {
@@ -24,6 +89,7 @@
   box-shadow: var(--shadow-lg);
   margin-bottom: 1.5rem;
   border: 1px solid var(--border);
+  /* Ensure default display is block/flex friendly */
 }
 
 .card-header {
@@ -82,6 +148,9 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  /* Prevent squashing on small screens */
+  gap: 1rem;
 }
 
 .setting-item.no-border {

@@ -18,6 +18,20 @@
     /* Container Query Context */
     container-type: inline-size;
     container-name: main-content;
+
+    /* Ensure content can scroll if it overflows viewport height */
+    /* overflow-x: hidden causes issues with sticky headers sometimes, but here we just need normal flow */
+    min-width: 0;
+    /* Flexbox trick to prevent overflow */
+}
+
+/* Wide Sidebar Adjustment for Large Screens */
+@media (min-width: 1280px) {
+    .main-content {
+        margin-left: 20rem;
+        /* w-80 */
+        width: calc(100% - 20rem);
+    }
 }
 
 @media (max-width: 641px) {

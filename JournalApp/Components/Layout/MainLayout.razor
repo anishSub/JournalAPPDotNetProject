@@ -1,12 +1,14 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager Navigation
 @inject JournalApp.Services.AuthService AuthService
+@using JournalApp.Components.Shared
 
 <div class="app-layout">
     <NavMenu />
     <main class="main-content">
         @Body
     </main>
+    <Toast />
 </div>
 
 @code {

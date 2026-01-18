@@ -27,6 +27,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<JournalApp.Data.JournalDatabase>();
         builder.Services.AddSingleton<JournalApp.Services.IJournalService, JournalApp.Services.JournalService>();
         builder.Services.AddSingleton<JournalApp.Services.AuthService>();
+        //toast notification service 
+        builder.Services.AddSingleton<JournalApp.Services.ToastService>();
 
 #if DEBUG
 		builder.Services.AddBlazorWebViewDeveloperTools();

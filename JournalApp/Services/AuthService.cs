@@ -12,15 +12,23 @@ public class AuthService
     private const string PinKey = "MasterPin";
 
     public bool IsAuthenticated { get; private set; } = false;
+    public bool JustLoggedIn { get; private set; } = false;
 
     public void LoginSuccess()
     {
         IsAuthenticated = true;
+        JustLoggedIn = true;
+    }
+
+    public void ClearLoginFlag()
+    {
+        JustLoggedIn = false;
     }
 
     public void Logout()
     {
         IsAuthenticated = false;
+        JustLoggedIn = false;
     }
 
     public async Task<bool> HasPasswordAsync()
