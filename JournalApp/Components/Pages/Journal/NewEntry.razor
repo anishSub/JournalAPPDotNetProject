@@ -39,8 +39,23 @@
         }
 
         <div class="editor-grid">
-            <!-- Main Editor Area -->
-            <div class="editor-main">
+            @if (IsMissedDay)
+            {
+                <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; background: var(--card-background); border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid var(--border); text-align: center;">
+                    <span style="font-size: 4rem; margin-bottom: 1rem;">🔒</span>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Missed Opportunity</h2>
+                    <p style="color: var(--text-secondary); max-width: 400px; margin-bottom: 2rem;">
+                        This day has passed. Strict journaling means we can only capture the moment while it's fresh.
+                    </p>
+                    <button class="action-btn" @onclick="GoBack" style="background-color: var(--primary); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-weight: 500; cursor: pointer;">
+                        Return to Dashboard
+                    </button>
+                </div>
+            }
+            else
+            {
+                <!-- Main Editor Area -->
+                <div class="editor-main">
                 <div class="content-card" style="display: flex; flex-direction: column; min-height: 600px;">
                     <input type="text" 
                         @bind="Title" 
@@ -141,13 +156,21 @@
                             {
                                 <div class="mood-group">
                                     <div class="mood-grid">
-                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "positive"))
+                                        @{ var positiveMoods = _secondaryMoods.Where(m => m.Type == "positive").ToList(); }
+                                        @if (positiveMoods.Any())
                                         {
-                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                                @mood.Emoji
-                                            </button>
+                                            @foreach (var mood in positiveMoods)
+                                            {
+                                                <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                        @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                        disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                    @mood.Emoji
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No positive moods added yet.</p>
                                         }
                                     </div>
                                 </div>
@@ -156,13 +179,21 @@
                             {
                                 <div class="mood-group">
                                     <div class="mood-grid">
-                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "neutral"))
+                                        @{ var neutralMoods = _secondaryMoods.Where(m => m.Type == "neutral").ToList(); }
+                                        @if (neutralMoods.Any())
                                         {
-                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                                @mood.Emoji
-                                            </button>
+                                            @foreach (var mood in neutralMoods)
+                                            {
+                                                <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                        @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                        disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                    @mood.Emoji
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No neutral moods added yet.</p>
                                         }
                                     </div>
                                 </div>
@@ -171,13 +202,21 @@
                             {
                                 <div class="mood-group">
                                     <div class="mood-grid">
-                                        @foreach (var mood in _secondaryMoods.Where(m => m.Type == "negative"))
+                                        @{ var negativeMoods = _secondaryMoods.Where(m => m.Type == "negative").ToList(); }
+                                        @if (negativeMoods.Any())
                                         {
-                                            <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
-                                                    @onclick="() => ToggleSecondaryMood(mood.Value)"
-                                                    disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
-                                                @mood.Emoji
-                                            </button>
+                                            @foreach (var mood in negativeMoods)
+                                            {
+                                                <button class="mood-btn @(SecondaryMoods.Contains(mood.Value) ? "active" : "")" 
+                                                        @onclick="() => ToggleSecondaryMood(mood.Value)"
+                                                        disabled="@(!SecondaryMoods.Contains(mood.Value) && SecondaryMoods.Count >= 2)">
+                                                    @mood.Emoji
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No negative moods added yet.</p>
                                         }
                                     </div>
                                 </div>
@@ -248,6 +287,7 @@
                 </div>
 
             </div>
+            }
         </div>
     </div>
 </div>

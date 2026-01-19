@@ -104,6 +104,8 @@ namespace JournalApp.Components.Pages.Journal
 
         protected bool _showAllTags = false;
         protected bool _entryExists = false;
+
+        public bool IsMissedDay { get; private set; } = false;
         public string LastError { get; set; } = ""; // Debugging helper
         [SupplyParameterFromQuery]
         public string? DateParam { get; set; }
@@ -167,6 +169,9 @@ namespace JournalApp.Components.Pages.Journal
                     await CheckEntryExists();
                 }
 
+                await LoadSuggestedTags();
+                await LoadSecondaryMoods();
+                StateHasChanged();
                 StateHasChanged(); 
             }
             catch (Exception ex)
@@ -194,8 +199,14 @@ namespace JournalApp.Components.Pages.Journal
                 PrimaryMood = _moodOptions.FirstOrDefault(m => m.Label == existingEntry.MoodLabel)?.Value ?? "";
                 
                 // Load Secondary Moods
-                if (!string.IsNullOrEmpty(existingEntry.SecondaryMood))
+                // Load Secondary Moods
+                if (existingEntry.SecondaryMoodsList != null && existingEntry.SecondaryMoodsList.Any())
                 {
+                    SecondaryMoods = existingEntry.SecondaryMoodsList.Select(s => s.Name).ToList();
+                }
+                else if (!string.IsNullOrEmpty(existingEntry.SecondaryMood))
+                {
+                    // Fallback to legacystring check
                     SecondaryMoods = existingEntry.SecondaryMood
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(s => s.Trim())
@@ -232,8 +243,14 @@ namespace JournalApp.Components.Pages.Journal
                 PrimaryMood = _moodOptions.FirstOrDefault(m => m.Label == existingEntry.MoodLabel)?.Value ?? "";
                 
                 // Load Secondary Moods (Deserialization)
-                if (!string.IsNullOrEmpty(existingEntry.SecondaryMood))
+                // Load Secondary Moods (Deserialization)
+                if (existingEntry.SecondaryMoodsList != null && existingEntry.SecondaryMoodsList.Any())
                 {
+                    SecondaryMoods = existingEntry.SecondaryMoodsList.Select(s => s.Name).ToList();
+                }
+                else if (!string.IsNullOrEmpty(existingEntry.SecondaryMood))
+                {
+                     // Fallback
                     SecondaryMoods = existingEntry.SecondaryMood
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(s => s.Trim())
@@ -248,12 +265,23 @@ namespace JournalApp.Components.Pages.Journal
                 
                 // We don't show the blocking warning anymore, we just let them edit.
                 _entryExists = false; 
+                IsMissedDay = false;
             }
             else
             {
                 // No entry exists for this date -> New Entry
                 _existingId = "";
                 _entryExists = false; 
+
+                // Check if this is a missed day (Past date with no entry)
+                if (Date.Date < DateTime.Today)
+                {
+                    IsMissedDay = true;
+                }
+                else
+                {
+                    IsMissedDay = false;
+                }
                 
                 // CRITICAL: Clear strict form state to avoid showing "Today's" data on "Yesterday's" new page
                 _title = "";
@@ -316,8 +344,24 @@ namespace JournalApp.Components.Pages.Journal
                     UserId = "default-user",
                     SecondaryMood = string.Join(",", SecondaryMoods),
                     // Preserve CreatedDate if updating, otherwise let database set it
-                    CreatedDate = existingEntry?.CreatedDate ?? DateTime.Now
+                    CreatedDate = existingEntry?.CreatedDate ?? DateTime.Now,
+                    SecondaryMoodsList = new List<JournalApp.Models.SecondaryMood>()
                 };
+
+                // Populate SecondaryMoodsList objects for Join Table saving
+                if(SecondaryMoods.Any())
+                {
+                    // We need to look up these secondary moods to get their IDs
+                    // Optimally we should have them in memory in _dbSecondaryMoods
+                    foreach(var smName in SecondaryMoods)
+                    {
+                        var match = _dbSecondaryMoods.FirstOrDefault(dbm => dbm.Name == smName);
+                        if(match != null)
+                        {
+                            entry.SecondaryMoodsList.Add(match);
+                        }
+                    }
+                }
 
                 // Get or create Mood
                 var selectedMoodOption = _moodOptions.FirstOrDefault(m => m.Value == PrimaryMood);
@@ -401,22 +445,40 @@ namespace JournalApp.Components.Pages.Journal
             new MoodOption { Value = "Negative", Label = "Negative", Emoji = "😞" }
         };
 
-        protected class SecondaryMood { public string Value { get; set; } = ""; public string Emoji { get; set; } = ""; public string Type { get; set; } = ""; }
-        protected List<SecondaryMood> _secondaryMoods = new()
+        // This is now purely for UI display logic (mapping internal ID to display props)
+        protected class UISecondaryMood { public string Value { get; set; } = ""; public string Emoji { get; set; } = ""; public string Type { get; set; } = ""; }
+        protected List<UISecondaryMood> _secondaryMoods = new(); // Populated from DB
+
+        // Keep raw DB objects handy
+        private List<JournalApp.Models.SecondaryMood> _dbSecondaryMoods = new();
+
+        protected async Task LoadSecondaryMoods()
         {
-            new SecondaryMood { Value = "happy", Emoji = "😊", Type = "positive" },
-            new SecondaryMood { Value = "grateful", Emoji = "🙏", Type = "positive" },
-            new SecondaryMood { Value = "excited", Emoji = "😄", Type = "positive" },
-            new SecondaryMood { Value = "blessed", Emoji = "✨", Type = "positive" },
-            new SecondaryMood { Value = "calm", Emoji = "😐", Type = "neutral" },
-            new SecondaryMood { Value = "thinking", Emoji = "🤔", Type = "neutral" },
-            new SecondaryMood { Value = "surprised", Emoji = "😮", Type = "neutral" },
-            new SecondaryMood { Value = "tired", Emoji = "😴", Type = "neutral" },
-            new SecondaryMood { Value = "sad", Emoji = "😢", Type = "negative" },
-            new SecondaryMood { Value = "anxious", Emoji = "😰", Type = "negative" },
-            new SecondaryMood { Value = "crying", Emoji = "😭", Type = "negative" },
-            new SecondaryMood { Value = "worried", Emoji = "😟", Type = "negative" }
-        };
+            _dbSecondaryMoods = await JournalService.GetSecondaryMoodsAsync();
+            var parentMoods = await JournalService.GetMoodsAsync();
+            
+            _secondaryMoods.Clear();
+            foreach(var mood in _dbSecondaryMoods)
+            {
+                // Find parent name (Positive/Neutral/Negative) to map to "Type"
+                var parent = parentMoods.FirstOrDefault(p => p.Id == mood.ParentMoodId);
+                
+                // Robust normalization
+                string type = parent?.Name?.Trim().ToLowerInvariant() ?? "neutral";
+                
+                // Handle alias cases if DB has legacy names
+                if (type == "happy") type = "positive";
+                if (type == "sad") type = "negative";
+                if (type == "calm") type = "neutral";
+                
+                _secondaryMoods.Add(new UISecondaryMood 
+                { 
+                    Value = mood.Name, 
+                    Emoji = mood.Emoji, 
+                    Type = type 
+                });
+            }
+        }
 
         protected List<string> _suggestedTags = new() { "Work", "Career", "Studies", "Family", "Friends", "Relationships", "Health", "Fitness", "Personal Growth", "Self-care", "Hobbies", "Travel" };
 
@@ -478,7 +540,16 @@ namespace JournalApp.Components.Pages.Journal
                 LastError = "";
                 if (!string.IsNullOrWhiteSpace(TagInput) && !Tags.Contains(TagInput.Trim()))
                 {
-                    Tags.Add(TagInput.Trim());
+                    var trimmedTag = TagInput.Trim();
+                    Tags.Add(trimmedTag);
+                    
+                    // Add to suggestions if not already present (UI convenience)
+                    // This ensures that if the user removes the tag, it reappears in the suggestions list
+                    if (!_suggestedTags.Contains(trimmedTag, StringComparer.OrdinalIgnoreCase))
+                    {
+                        _suggestedTags.Add(trimmedTag);
+                    }
+
                     TagInput = "";
                     _isDirty = true;
                     await InvokeAsync(StateHasChanged);
@@ -521,6 +592,26 @@ namespace JournalApp.Components.Pages.Journal
         {
             _showAllTags = true;
             InvokeAsync(StateHasChanged);
+        }
+
+        protected async Task LoadSuggestedTags()
+        {
+            try
+            {
+                var userTags = await JournalService.GetTagsAsync();
+                foreach (var tag in userTags)
+                {
+                    // Case-insensitive check to avoid duplicates like "Work" and "work"
+                    if (!_suggestedTags.Contains(tag.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        _suggestedTags.Add(tag.Name);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[NewEntry] Error loading tags: {ex.Message}");
+            }
         }
 
         protected async Task InsertMarkdown(string prefix, string suffix)
