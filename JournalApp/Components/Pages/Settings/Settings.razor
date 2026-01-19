@@ -4,6 +4,7 @@
 @using JournalApp.Services
 @using System.Threading.Tasks
 @inject AuthService AuthService
+@inject IJournalService JournalService
 @inject NavigationManager Navigation
 @inject ToastService ToastService
 
@@ -26,15 +27,49 @@
 
                     <div class="profile-info">
                         <div class="avatar">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
+                            @if (!string.IsNullOrEmpty(_profileImageBase64))
+                            {
+                                <img src="@_profileImageBase64" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            }
                         </div>
                         <div class="profile-text">
                             @if (_isEditingProfile)
                             {
                                 <div class="edit-profile-form">
+                                    <div class="profile-image-edit" style="margin-bottom: 1rem; position: relative; display: inline-block; width: 80px; height: 80px;">
+                                        <label for="profileUpload" style="cursor: pointer; width: 100%; height: 100%; display: block; position: relative;">
+                                            @if (!string.IsNullOrEmpty(_tempBase64))
+                                            {
+                                                <img src="@_tempBase64" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); display: block;" />
+                                            }
+                                            else if (!string.IsNullOrEmpty(_profileImageBase64))
+                                            {
+                                                 <img src="@_profileImageBase64" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); display: block;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="width: 100%; height: 100%; border-radius: 50%; background-color: var(--surface-secondary); display: flex; align-items: center; justify-content: center; border: 2px dashed var(--text-secondary);">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-secondary);">
+                                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                                        <circle cx="12" cy="13" r="4"></circle>
+                                                    </svg>
+                                                </div>
+                                            }
+                                            <div style="position: absolute; bottom: 0; right: 0; background-color: var(--accent-color); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M12 5v14M5 12h14"></path>
+                                                </svg>
+                                            </div>
+                                        </label>
+                                        <InputFile Id="profileUpload" OnChange="HandleFileSelected" style="display: none;" accept=".jpg,.jpeg,.png" />
+                                    </div>
                                     <input type="text" @bind="_userName" class="profile-input" placeholder="Enter your name" />
                                     <button class="btn-save-profile" @onclick="SaveProfile">Save</button>
                                 </div>
@@ -45,7 +80,7 @@
                                     <h3>@_userName</h3>
                                     <button class="btn-edit-profile-text" @onclick="ToggleEditProfile">Edit</button>
                                 </div>
-                                <p>Journaling since January 2026</p>
+                                <p>Journaling since @_memberSince</p>
                             }
                         </div>
                     </div>
@@ -136,13 +171,7 @@
                         </div>
                     }
 
-                    <div class="setting-item">
-                        <div>
-                             <h3 class="setting-title" style="color: #ef4444;">Reset Data</h3>
-                             <p class="setting-desc">Clear all journal entries</p>
-                        </div>
-                        <button class="btn-secondary" style="color: #ef4444; border-color: #ef4444;" @onclick="ResetData">Reset Data</button>
-                    </div>
+
 
                     <div class="setting-item no-border">
                         <button class="btn-sign-out" @onclick="SignOut">Sign Out</button>
@@ -158,6 +187,10 @@
     
     // Profile State
     private string _userName = "Journal User";
+    private string _profileImagePath = "";
+    private string _profileImageBase64 = ""; // Persistent Base64 for display
+    private string _tempProfileImagePath = "";
+    private string _tempBase64 = ""; // For immediate preview
     private bool _isEditingProfile = false;
     
     // Security State
@@ -166,6 +199,7 @@
     private bool _isSetPinVisible = false;
     private string _newPassword = "";
     private string _newPin = "";
+    private string _memberSince = "January 2026"; // Default fallback
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,9 +208,35 @@
         
         // Load Profile
         _userName = Preferences.Get("UserName", "Journal User");
+        _profileImagePath = Preferences.Get("UserProfileImage", "");
+        
+        // Load Base64 for Image Display (Fixes file:// access restrictions on Mac)
+        if (!string.IsNullOrEmpty(_profileImagePath) && File.Exists(_profileImagePath))
+        {
+            try 
+            {
+                var bytes = await File.ReadAllBytesAsync(_profileImagePath);
+                var base64 = Convert.ToBase64String(bytes);
+                // Simple mime type detection
+                var mimeType = _profileImagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+                _profileImageBase64 = $"data:{mimeType};base64,{base64}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading profile image: {ex.Message}");
+                // Fallback or leave empty to show placeholder
+            }
+        }
         
         // Load Security Status
         _hasPin = await AuthService.HasPinAsync();
+        
+        // Load Member Since Date
+        var user = await JournalService.GetUserAsync();
+        if (user != null)
+        {
+             _memberSince = user.CreatedDate.ToString("MMMM yyyy");
+        }
     }
 
     // ... existing profile methods ...
@@ -195,7 +255,7 @@
             await AuthService.SetPasswordAsync(_newPassword);
             _newPassword = "";
             _isChangePasswordVisible = false;
-            ToastService.ShowSuccess("Password updated successfully! 🔒");
+            ToastService.ShowSuccess("Password updated successfully! ");
         }
         else
         {
@@ -233,7 +293,7 @@
             _hasPin = true;
             _newPin = "";
             _isSetPinVisible = false;
-            ToastService.ShowSuccess("PIN set successfully! 📌");
+            ToastService.ShowSuccess("PIN set successfully! ");
         }
          else
         {
@@ -259,6 +319,51 @@
     private void ToggleEditProfile()
     {
         _isEditingProfile = !_isEditingProfile;
+        if (_isEditingProfile) {
+            _tempProfileImagePath = ""; 
+            _tempBase64 = "";
+        }
+    }
+    
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file == null) return;
+
+            // Limit size to 5MB
+            long maxFileSize = 5 * 1024 * 1024;
+            
+            // Generate unique path
+            var newFile = Path.Combine(FileSystem.AppDataDirectory, $"profile_{Guid.NewGuid()}.jpg");
+
+            // Open stream from browser file
+            // We must copy it to a local file stream
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var fileStream = File.Create(newFile);
+            await stream.CopyToAsync(fileStream);
+
+            // Create Base64 for Preview
+            // We need to read the file we just saved (or read from stream again if we memory streamed it, but file is safer for memory)
+            fileStream.Close(); // Ensure flush
+            
+            var bytes = await File.ReadAllBytesAsync(newFile);
+            var base64 = Convert.ToBase64String(bytes);
+            
+            // Determine mime type roughly
+            var mimeType = "image/jpeg";
+            if (file.Name.EndsWith("png", StringComparison.OrdinalIgnoreCase)) mimeType = "image/png";
+
+            _tempProfileImagePath = newFile;
+            _tempBase64 = $"data:{mimeType};base64,{base64}";
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await ShowAlert("Error", "Could not upload image: " + ex.Message);
+        }
     }
 
     private void SaveProfile()
@@ -268,8 +373,21 @@
             _userName = "Journal User";
         }
         Preferences.Set("UserName", _userName);
+        
+        if (!string.IsNullOrEmpty(_tempProfileImagePath))
+        {
+            _profileImagePath = _tempProfileImagePath;
+            Preferences.Set("UserProfileImage", _profileImagePath);
+            
+            // Update persistent base64 for immediate view update
+            if (!string.IsNullOrEmpty(_tempBase64)) 
+            {
+                _profileImageBase64 = _tempBase64;
+            }
+        }
+        
         _isEditingProfile = false;
-        ToastService.ShowSuccess("Profile updated successfully! 👤");
+        ToastService.ShowSuccess("Profile updated successfully! ");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -283,17 +401,7 @@
 
 
 
-    private async Task ResetData()
-    {
-        bool confirm = await (Application.Current?.Windows[0].Page?.DisplayAlert("Reset All Data?", "This will PERMANENTLY DELETE all entries, tags, and moods. This action cannot be undone.", "Delete Everything", "Cancel") ?? Task.FromResult(false));
-         
-        if (confirm)
-        {
-             // TODO: Expose Reset in Service or Database
-             // await JournalService.DeleteAllDataAsync(); 
-             await ShowAlert("Coming Soon", "This feature is disabled for safety in this version.");
-        }
-    }
+
 
     private async Task SetLightMode()
     {
