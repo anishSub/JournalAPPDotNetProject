@@ -13,7 +13,7 @@
         </button>
     </div>
 
-    @if (_showDateFilter)
+    @if (_showDateFilter || _isCustomRangeActive)
     {
         <div class="filter-panel">
             <h3>Filter Analytics by Date Range</h3>
@@ -137,8 +137,10 @@
     private DateTime? _startDate;
     private DateTime? _endDate;
     private string _timePeriod = "week";
+    private bool _isCustomRangeActive = false;
     private bool _isDarkMode = false; // Should get from valid source
     private List<JournalApp.Models.JournalEntry> _entries = new();
+    private List<JournalApp.Models.JournalEntry> _allEntries = new(); // Store all entries for Heatmap
 
     // Stats
     private int _dailyStreak = 0;
@@ -172,6 +174,9 @@
 
     private async Task ApplyFilter()
     {
+        _isCustomRangeActive = true;
+        _timePeriod = "custom"; // Disable standard toggles
+        
         // Re-fetch data based on range (Mock)
         await RenderCharts();
     }
@@ -180,12 +185,38 @@
     {
         _startDate = null;
         _endDate = null;
+        _isCustomRangeActive = false;
+        _timePeriod = "week"; // Reset to default
         await RenderCharts();
     }
 
     private async Task UpdateTimePeriod(string period)
     {
         _timePeriod = period;
+        // If user clicks a preset (Week/Month/Year), we clear the custom date filter visual, 
+        // but arguably we should also clear the dates. 
+        // For now, let's reset custom flag so WordChart takes over.
+        _isCustomRangeActive = false;
+        _startDate = null; // Optional: clear inputs
+        _endDate = null;
+        
+        // Re-render everything to reset main filters if 'Week' just means 'Last 7 Days' globally?
+        // Actually, the user likely wants the *Word Chart* to toggle, but usually these toggles control the whole view 
+        // OR just the chart. The prompt implies "make upper cards... work with that date filter".
+        // So if I pick "Year", does it filter everything to Year? 
+        // Current Code: UpdateTimePeriod ONLY calls RenderWordCountChart. 
+        // It DOES NOT refetch/filter _entries. 
+        // So _entries remains whatever it was (All, or Filtered).
+        // If I use the Date Picker, _entries is filtered.
+        // If I then click "Week", it tries to show "Week" subset of... the already filtered _entries?
+        
+        // Strategy: 
+        // Date Picker = Global Filter.
+        // Word Chart Toggles = Sub-filter for Word Chart (Visual/Zoom).
+        // BUT, usually "Time Period" on a dashboard controls the global context.
+        // Given the code structure, I will keep Time Period as a Chart-Specific toggle 
+        // UNLESS the Global Filter is active, in which case the Chart should probably show the whole range.
+        
         await RenderWordCountChart();
     }
 
@@ -193,6 +224,7 @@
     {
         // 1. Fetch EVERYTHING once
         var allEntries = await JournalService.GetAllEntriesAsync();
+        _allEntries = allEntries; // Keep a copy of all data
         _entries = allEntries; // Store for charts filtering
 
         // 2. Calculate Stats in-memory (Avoiding 4 extra DB calls)
@@ -265,10 +297,39 @@
         _frequentMood = mostFreq?.Key ?? "Neutral";
         _frequentMoodEmoji = GetEmojiForMood(_frequentMood);
 
-        // Missed Days (Current Month)
-        var entriesThisMonth = entries.Where(e => e.Date.Month == today.Month && e.Date.Year == today.Year);
-        var uniqueEntryDays = entriesThisMonth.Select(e => e.Date.Date).Where(d => d <= today).Distinct().Count();
-        _missedDays = Math.Max(0, today.Day - uniqueEntryDays);
+        // Missed Days (Relative to Selection)
+        // If Custom Range: Count days in range - unique entries.
+        // If No Range (Global): Keep "This Month" logic or default to "Last 30 days"?
+        // Original code: "This Month".
+        
+        int totalDaysInRange;
+        DateTime startCount;
+        DateTime endCount;
+        
+        if (_isCustomRangeActive && _startDate.HasValue && _endDate.HasValue)
+        {
+             startCount = _startDate.Value;
+             endCount = _endDate.Value > DateTime.Today ? DateTime.Today : _endDate.Value; // Don't count future missed
+        }
+        else
+        {
+             // Default: Current Month
+             startCount = new DateTime(today.Year, today.Month, 1);
+             endCount = today;
+        }
+
+        if (endCount >= startCount)
+        {
+            totalDaysInRange = (endCount - startCount).Days + 1;
+            // Count unique entry dates in this range
+            var entriesInRange = entries.Where(e => e.Date.Date >= startCount && e.Date.Date <= endCount).Select(e => e.Date.Date).Distinct().Count();
+            _missedDays = Math.Max(0, totalDaysInRange - entriesInRange);
+        }
+        else
+        {
+            _missedDays = 0;
+        }
+
         
         // Default "1" logic functionality
         if (_dailyStreak == 0) _dailyStreak = 0;
@@ -298,8 +359,12 @@
         await RenderMoodChart();
         await RenderTagsChart();
         await RenderWordCountChart();
+        
+        // RE-CALCULATE Stats based on the filtered _entries
+        CalculateStats(_entries);
+        
+        StateHasChanged(); // Update UI
     }
-    
     // Stub for original RenderCharts to support button clicks re-filtering
     private async Task RenderCharts()
     {
@@ -369,20 +434,45 @@
     private async Task RenderWordCountChart()
     {
         // Filter for Time Period
-        DateTime cutoff = _timePeriod switch
+        DateTime cutoff;
+        
+        if (_isCustomRangeActive && _startDate.HasValue)
         {
-            "week" => DateTime.Today.AddDays(-6),
-            "month" => DateTime.Today.AddDays(-30),
-            "year" => DateTime.Today.AddMonths(-11), // Last 12 months
-            _ => DateTime.MinValue
-        };
+             cutoff = _startDate.Value;
+             // We will ignore timePeriod buttons if custom range is active, or we can treat logic differently.
+             // Best approach: If custom range, show ALL data in filtered _entries.
+             // Since _entries IS ALREADY filtered by RenderChartsInternal logic, we just need to ensure we don't accidentally clip it again with `cutoff`.
+             cutoff = DateTime.MinValue; 
+        }
+        else
+        {
+             cutoff = _timePeriod switch
+            {
+                "week" => DateTime.Today.AddDays(-6),
+                "month" => DateTime.Today.AddDays(-30),
+                "year" => DateTime.Today.AddMonths(-11), // Last 12 months
+                _ => DateTime.MinValue
+            };
+        }
 
          var chartEntries = _entries.Where(e => e.Date.Date >= cutoff).ToList();
 
         // Grouping logic
         object[] wordData;
 
-        if (_timePeriod == "year")
+        // Determine grouping strategy
+        // If Year OR (Custom Range > 31 Days) -> Group by Month? 
+        // For simplicity, let's keep it based on _timePeriod toggle UNLESS Custom Range is heavily wide.
+        bool useMonthlyGrouping = _timePeriod == "year";
+        
+        // If Custom Range is Active, auto-detect grouping?
+        if (_isCustomRangeActive && _startDate.HasValue && _endDate.HasValue)
+        {
+            var days = (_endDate.Value - _startDate.Value).TotalDays;
+            if (days > 60) useMonthlyGrouping = true;
+        }
+
+        if (useMonthlyGrouping)
         {
              // Group by Month
              var grouped = chartEntries
@@ -437,8 +527,8 @@
     {
         var result = new List<HeatmapMonthGroup>();
         var currentYear = DateTime.Today.Year;
-        // Pre-fetch entries for performance
-        var entryDict = _entries.Where(e => e.Date.Year == currentYear)
+        // Pre-fetch entries for performance - Use _allEntries (Unfiltered)
+        var entryDict = _allEntries.Where(e => e.Date.Year == currentYear)
                                 .GroupBy(e => e.Date.Date)
                                 .ToDictionary(g => g.Key, g => g.First());
 
