@@ -86,6 +86,7 @@
                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #10b981;"></span> Positive</span>
                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #94a3b8;"></span> Neutral</span>
                 <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: #ef4444;"></span> Negative</span>
+                <span style="display: flex; align-items: center; gap: 0.25rem;"><span class="heatmap-cell" style="background-color: transparent; border: 1px solid var(--text-secondary); opacity: 0.5;"></span> Missed</span>
             </div>
         </div>
         
@@ -99,8 +100,8 @@
                             @foreach (var day in month.Days)
                             {
                                 <div class="heatmap-cell @GetClassForHeatmap(day)" 
-                                     title="@(day.IsPlaceholder ? "" : $"{day.Date:MMM dd, yyyy}: {day.Mood ?? "No Entry"}")"
-                                     style="@(string.IsNullOrEmpty(day.Mood) ? "" : $"background-color: {GetColorForHeatmap(day.Mood)}")">
+                                     title="@(day.IsPlaceholder ? "" : $"{day.Date:MMM dd, yyyy}: {(day.IsMissed ? "Missed" : day.Mood ?? "No Entry")}")"
+                                     style="@GetStyleForHeatmapCell(day)">
                                 </div>
                             }
                         </div>
@@ -423,6 +424,7 @@
         public DateTime Date { get; set; }
         public string? Mood { get; set; }
         public bool IsPlaceholder { get; set; } = false;
+        public bool IsMissed { get; set; } = false;
     }
 
     private class HeatmapMonthGroup
@@ -459,7 +461,9 @@
                 {
                     mood = entry.MoodLabel;
                 }
-                monthGroup.Days.Add(new HeatmapDay { Date = date, Mood = mood });
+                
+                bool isMissed = string.IsNullOrEmpty(mood) && date < DateTime.Today;
+                monthGroup.Days.Add(new HeatmapDay { Date = date, Mood = mood, IsMissed = isMissed });
             }
 
             result.Add(monthGroup);
@@ -481,4 +485,21 @@
         "Negative" or "Sad" => "#ef4444", // Red
         _ => "transparent"
     };
+
+    private string GetStyleForHeatmapCell(HeatmapDay day)
+    {
+        if (day.IsPlaceholder) return "";
+        
+        if (!string.IsNullOrEmpty(day.Mood))
+        {
+            return $"background-color: {GetColorForHeatmap(day.Mood)}";
+        }
+        
+        if (day.IsMissed)
+        {
+             return ""; // Missed days should look blank (just like empty future days)
+        }
+        
+        return "";
+    }
 }

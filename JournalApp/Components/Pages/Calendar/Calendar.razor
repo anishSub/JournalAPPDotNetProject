@@ -112,10 +112,29 @@
                 else
                 {
                     <div class="empty-entries">
-                        <p>No entries for this day.</p>
-                        <button class="btn-create-small" @onclick='() => Navigation.NavigateTo($"/journal/create?date={SelectedDate:yyyy-MM-dd}")'>
-                            + Create Entry
-                        </button>
+                        @if (SelectedDate.Date < DateTime.Today)
+                        {
+                            <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                                <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔒</p>
+                                <p>You missed journaling on this day.</p>
+                                <p style="font-size: 0.875rem; opacity: 0.7;">Past moments cannot be recaptured.</p>
+                            </div>
+                        }
+                        else if (SelectedDate.Date > DateTime.Today)
+                        {
+                            <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                                <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔮</p>
+                                <p>You cannot write in the future!</p>
+                                <p style="font-size: 0.875rem; opacity: 0.7;">Come back on this day.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>No entries for today yet.</p>
+                            <button class="btn-create-small" @onclick='() => Navigation.NavigateTo($"/journal/create?date={SelectedDate:yyyy-MM-dd}")'>
+                                + Create Entry
+                            </button>
+                        }
                     </div>
                 }
             </div>

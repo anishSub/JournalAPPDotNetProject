@@ -1,6 +1,7 @@
 @page "/search"
 @inject JournalApp.Services.IJournalService JournalService
 @inject IJSRuntime JSRuntime
+@inject JournalApp.Services.ToastService ToastService
 @using JournalApp.Models
 
 <div class="search-page">
@@ -8,13 +9,13 @@
         <!-- Header -->
         <div class="page-header">
             <h1>Search Entries</h1>
-            <button class="btn-export" @onclick="() => _showExportModal = true">
+            <button class="btn-export" @onclick="ExportPdf">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Export to PDF
+                Export PDF
             </button>
         </div>
 
@@ -147,36 +148,15 @@
     </div>
 
     <!-- Export Modal -->
-    @if (_showExportModal)
-    {
-        <div class="modal-overlay" @onclick="() => _showExportModal = false">
-            <div class="modal-content" @onclick:stopPropagation>
-                <h3>Export Journals to PDF</h3>
-                
-                <div class="modal-form">
-                    <div class="form-group">
-                        <label>Start Date</label>
-                        <input type="date" @bind="_exportStartDate" />
-                    </div>
-                    <div class="form-group">
-                        <label>End Date</label>
-                        <input type="date" @bind="_exportEndDate" />
-                    </div>
-                </div>
 
-                <div class="modal-actions">
-                    <button class="btn-primary" @onclick="ExportPdf">Export</button>
-                    <button class="btn-secondary" @onclick="() => _showExportModal = false">Cancel</button>
-                </div>
-            </div>
-        </div>
-    }
     <!-- Hidden Export Container -->
     <!-- Hidden Export Container -->
     <div id="export-container" style="display: none;">
         <div style="padding: 20px; font-family: sans-serif; color: black; max-width: 800px; margin: 0 auto;">
             <h1 style="text-align: center; color: #2563eb; margin-bottom: 5px;">Journal Entries</h1>
-            <p style="text-align: center; color: #666; margin-top: 0;">@_exportStartDate.ToString("MMM d, yyyy") - @_exportEndDate.ToString("MMM d, yyyy")</p>
+            <p style="text-align: center; color: #666; margin-top: 0;">
+                @(ExportEntries.Any() ? $"{ExportEntries.Min(e => e.Date):MMM d, yyyy} - {ExportEntries.Max(e => e.Date):MMM d, yyyy}" : DateTime.Now.ToString("MMM d, yyyy"))
+            </p>
             <hr style="border: 1px solid #eee; margin: 20px 0;" />
             
             @foreach (var entry in ExportEntries)
@@ -210,9 +190,7 @@
     private List<JournalEntry> FilteredEntries { get; set; } = new();
     private bool _isLoading = false;
 
-    private bool _showExportModal = false;
-    private DateTime _exportStartDate = DateTime.Now.AddMonths(-1);
-    private DateTime _exportEndDate = DateTime.Now;
+
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -299,17 +277,17 @@
 
     private async Task ExportPdf()
     {
-        // 1. Filter entries
-        var allEntries = await JournalService.GetAllEntriesAsync();
-        ExportEntries = allEntries.Where(e =>
-            e.Date.Date >= _exportStartDate.Date && e.Date.Date <= _exportEndDate.Date
-        ).OrderByDescending(e => e.Date).ToList();
-
-        if (!ExportEntries.Any())
+        if (!FilteredEntries.Any())
         {
-            await Application.Current.MainPage.DisplayAlert("No Entries", "No entries found for selected range.", "OK");
+            await Application.Current.MainPage.DisplayAlert("No Entries", "There are no entries to export based on current filters.", "OK");
             return;
         }
+
+        bool confirm = await Application.Current.MainPage.DisplayAlert("Export PDF", $"Export {FilteredEntries.Count} entries matching your criteria?", "Export", "Cancel");
+        if (!confirm) return;
+
+        // 1. Use currently filtered entries
+        ExportEntries = FilteredEntries.OrderByDescending(e => e.Date).ToList();
 
         // 2. Wait for UI to render the hidden table
         await InvokeAsync(StateHasChanged);
@@ -331,6 +309,8 @@
                 
                 // Open directly (Preview app on Mac) instead of Share Sheet
                 await Launcher.Default.OpenAsync(new Uri($"file://{filePath}"));
+                
+                ToastService.ShowSuccess("Journals exported successfully!");
             }
         }
         catch (Exception ex)
@@ -338,7 +318,5 @@
              Console.WriteLine($"JS Export failed: {ex}");
              await Application.Current.MainPage.DisplayAlert("Export Failed", $"Could not generate PDF. Error: {ex.Message}", "OK");
         }
-
-        _showExportModal = false;
     }
 }
