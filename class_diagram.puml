@@ -70,6 +70,7 @@ class JournalEntry <<entity>> {
     - Mood : Mood
     - Category : Category
     - Tags : List<Tag>
+    - SecondaryMoodsList : List<SecondaryMood>
     
     ' Computed Properties
     + MoodLabel : string
@@ -82,6 +83,14 @@ class Mood <<entity>> {
     - Name : string
     - Emoji : string
     - Color : string
+}
+
+class SecondaryMood <<entity>> {
+    ' Attributes
+    - Id : int
+    - Name : string
+    - Emoji : string
+    - ParentMoodId : int
 }
 
 class Category <<entity>> {
@@ -103,6 +112,12 @@ class EntryTag <<junction>> {
     ' Attributes (Composite Key)
     - EntryId : string
     - TagId : int
+}
+
+class EntrySecondaryMood <<junction>> {
+    ' Attributes (Composite Key)
+    - EntryId : string
+    - SecondaryMoodId : int
 }
 
 ' ============================================
@@ -133,6 +148,9 @@ interface IJournalService <<interface>> {
     + GetMoodsAsync() : Task<List<Mood>>
     + GetTagsAsync() : Task<List<Tag>>
     + GetOrCreateTagAsync(tagName : string) : Task<Tag?>
+    + GetSecondaryMoodsAsync() : Task<List<SecondaryMood>>
+    + SaveSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
+    + DeleteSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
 }
 
 class JournalService {
@@ -165,6 +183,9 @@ class JournalService {
     + GetMoodsAsync() : Task<List<Mood>>
     + GetTagsAsync() : Task<List<Tag>>
     + GetOrCreateTagAsync(tagName : string) : Task<Tag?>
+    + GetSecondaryMoodsAsync() : Task<List<SecondaryMood>>
+    + SaveSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
+    + DeleteSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
 }
 
 class AuthService {
@@ -233,6 +254,9 @@ class JournalDatabase <<repository>> {
     ' Mood CRUD
     + GetMoodsAsync() : Task<List<Mood>>
     + GetMoodByIdAsync(id : int) : Task<Mood?>
+    + GetSecondaryMoodsAsync() : Task<List<SecondaryMood>>
+    + SaveSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
+    + DeleteSecondaryMoodAsync(mood : SecondaryMood) : Task<int>
     
     ' Tag CRUD
     + GetTagsAsync(userId : string) : Task<List<Tag>>
@@ -249,6 +273,7 @@ class JournalDatabase <<repository>> {
     - LoadEntryRelations(entry : JournalEntry) : Task
     - LoadBatchEntryRelations(entries : List<JournalEntry>) : Task
     - SaveEntryTags(entry : JournalEntry) : Task
+    - SaveEntrySecondaryMoods(entry : JournalEntry) : Task
 }
 
 ' ============================================
@@ -268,6 +293,10 @@ User "1" *-- "0..*" Tag : owns >
 
 ' JournalEntry owns EntryTag associations (if entry deleted, associations deleted)
 JournalEntry "1" *-- "0..*" EntryTag : has >
+JournalEntry "1" *-- "0..*" EntrySecondaryMood : has >
+
+' Mood owns SecondaryMoods (cannot exist without parent mood)
+Mood "1" *-- "0..*" SecondaryMood : contains >
 
 ' --- ASSOCIATION (Uses/Has relationship) ---
 ' User has many JournalEntries
@@ -282,18 +311,24 @@ JournalEntry "0..*" --> "0..1" Category : belongs to >
 ' Tag participates in many-to-many with JournalEntry
 Tag "1" -- "0..*" EntryTag : tagged in >
 
+' SecondaryMood participates in many-to-many with JournalEntry
+SecondaryMood "1" -- "0..*" EntrySecondaryMood : linked in >
+
 ' --- AGGREGATION (Weak ownership, can exist independently) ---
 ' JournalEntry aggregates Tags (tags can exist without entries)
 JournalEntry "0..*" o-- "0..*" Tag : - Tags
+JournalEntry "0..*" o-- "0..*" SecondaryMood : - SecondaryMoodsList
 
 ' --- DEPENDENCY (Uses temporarily) ---
 ' JournalDatabase depends on all entities for CRUD operations
 JournalDatabase ..> User : <<use>>
 JournalDatabase ..> JournalEntry : <<use>>
 JournalDatabase ..> Mood : <<use>>
+JournalDatabase ..> SecondaryMood : <<use>>
 JournalDatabase ..> Category : <<use>>
 JournalDatabase ..> Tag : <<use>>
 JournalDatabase ..> EntryTag : <<use>>
+JournalDatabase ..> EntrySecondaryMood : <<use>>
 
 
 ' ToastService depends on ToastType
@@ -333,6 +368,9 @@ note bottom of JournalEntry
   
   Navigation properties
   are lazy-loaded.
+  
+  Now includes relationship
+  to SecondaryMoods (M:N).
 end note
 
 note right of EntryTag
@@ -341,6 +379,18 @@ note right of EntryTag
   between JournalEntry and Tag.
   No primary key, composite key
   of (EntryId, TagId).
+end note
+
+note left of SecondaryMood
+  **Dynamic Attributes**
+  Child of Mood (Positive/Neutral/Negative).
+  Users can add custom secondary moods.
+end note
+
+note right of EntrySecondaryMood
+  **Junction Table**
+  Many-to-Many relationship
+  for complex emotions.
 end note
 
 note top of JournalDatabase

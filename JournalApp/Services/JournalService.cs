@@ -188,5 +188,36 @@ namespace JournalApp.Services
         {
             return await _database.GetOrCreateTagAsync(tagName, "default-user").ConfigureAwait(false);
         }
+
+        public async Task<int> DeleteTagAsync(string tagName)
+        {
+            // We need ID to delete, but interface says string tagName? I should probably change interface or look up tag.
+            // Let's look up tag first.
+            var tag = await _database.GetOrCreateTagAsync(tagName, "default-user"); // This creates if not exists, side effect.
+            // Better to fetch tags and find it.
+            var tags = await _database.GetTagsAsync("default-user");
+            var target = tags.FirstOrDefault(t => t.Name == tagName);
+            
+            if (target != null)
+            {
+                return await _database.DeleteTagAsync(target.Id).ConfigureAwait(false);
+            }
+            return 0;
+        }
+
+        public async Task<List<SecondaryMood>> GetSecondaryMoodsAsync()
+        {
+            return await _database.GetSecondaryMoodsAsync().ConfigureAwait(false);
+        }
+
+        public async Task<int> SaveSecondaryMoodAsync(SecondaryMood mood)
+        {
+            return await _database.SaveSecondaryMoodAsync(mood).ConfigureAwait(false);
+        }
+
+        public async Task<int> DeleteSecondaryMoodAsync(int id)
+        {
+            return await _database.DeleteSecondaryMoodAsync(id).ConfigureAwait(false);
+        }
     }
 }

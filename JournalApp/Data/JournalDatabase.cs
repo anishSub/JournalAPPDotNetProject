@@ -35,7 +35,10 @@ namespace JournalApp.Data
                 await _database.CreateTableAsync<Category>().ConfigureAwait(false);
                 await _database.CreateTableAsync<Tag>().ConfigureAwait(false);
                 await _database.CreateTableAsync<JournalEntry>().ConfigureAwait(false);
+                await _database.CreateTableAsync<JournalEntry>().ConfigureAwait(false);
                 await _database.CreateTableAsync<EntryTag>().ConfigureAwait(false);
+                await _database.CreateTableAsync<SecondaryMood>().ConfigureAwait(false);
+                await _database.CreateTableAsync<EntrySecondaryMood>().ConfigureAwait(false);
 
                 // Seed default data
                 await SeedDefaultData().ConfigureAwait(false);
@@ -80,6 +83,52 @@ namespace JournalApp.Data
                 {
                     await _database.InsertAsync(required).ConfigureAwait(false);
                 }
+            }
+
+            // Seed Secondary Moods
+            await SeedSecondaryMoods(requiredMoods).ConfigureAwait(false);
+        }
+
+        private async Task SeedSecondaryMoods(List<Mood> parentMoods)
+        {
+            var existing = await _database.Table<SecondaryMood>().ToListAsync().ConfigureAwait(false);
+            if (existing.Any()) return;
+
+            // We need parent IDs. Reload moods to be sure we have IDs
+            var dbMoods = await _database.Table<Mood>().ToListAsync().ConfigureAwait(false);
+            var positive = dbMoods.FirstOrDefault(m => m.Name == "Positive");
+            var neutral = dbMoods.FirstOrDefault(m => m.Name == "Neutral");
+            var negative = dbMoods.FirstOrDefault(m => m.Name == "Negative");
+
+            var defaults = new List<SecondaryMood>();
+
+            if (positive != null)
+            {
+                defaults.Add(new SecondaryMood { Name = "Happy", Emoji = "😊", ParentMoodId = positive.Id });
+                defaults.Add(new SecondaryMood { Name = "Grateful", Emoji = "🙏", ParentMoodId = positive.Id });
+                defaults.Add(new SecondaryMood { Name = "Excited", Emoji = "😄", ParentMoodId = positive.Id });
+                defaults.Add(new SecondaryMood { Name = "Blessed", Emoji = "✨", ParentMoodId = positive.Id });
+            }
+
+            if (neutral != null)
+            {
+                defaults.Add(new SecondaryMood { Name = "Calm", Emoji = "😐", ParentMoodId = neutral.Id });
+                defaults.Add(new SecondaryMood { Name = "Thinking", Emoji = "🤔", ParentMoodId = neutral.Id });
+                defaults.Add(new SecondaryMood { Name = "Surprised", Emoji = "😮", ParentMoodId = neutral.Id });
+                defaults.Add(new SecondaryMood { Name = "Tired", Emoji = "😴", ParentMoodId = neutral.Id });
+            }
+
+            if (negative != null)
+            {
+                defaults.Add(new SecondaryMood { Name = "Sad", Emoji = "😢", ParentMoodId = negative.Id });
+                defaults.Add(new SecondaryMood { Name = "Anxious", Emoji = "😰", ParentMoodId = negative.Id });
+                defaults.Add(new SecondaryMood { Name = "Crying", Emoji = "😭", ParentMoodId = negative.Id });
+                defaults.Add(new SecondaryMood { Name = "Worried", Emoji = "😟", ParentMoodId = negative.Id });
+            }
+
+            foreach (var item in defaults)
+            {
+                await _database.InsertAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -169,6 +218,9 @@ namespace JournalApp.Data
 
             // Save tags (many-to-many relationship)
             await SaveEntryTags(item).ConfigureAwait(false);
+            
+            // Save secondary moods (many-to-many relationship)
+            await SaveEntrySecondaryMoods(item).ConfigureAwait(false);
 
             return result;
         }
@@ -180,6 +232,7 @@ namespace JournalApp.Data
             // Delete associated entry-tags first
             // Delete associated entry-tags first (Direct SQL because EntryTag has no PK)
             await _database.ExecuteAsync("DELETE FROM EntryTag WHERE EntryId = ?", item.Id).ConfigureAwait(false);
+            await _database.ExecuteAsync("DELETE FROM EntrySecondaryMood WHERE EntryId = ?", item.Id).ConfigureAwait(false);
             
             return await _database.DeleteAsync(item).ConfigureAwait(false);
         }
@@ -223,6 +276,20 @@ namespace JournalApp.Data
                 if (tag != null)
                     entry.Tags.Add(tag);
             }
+
+            // Load Secondary Moods
+            var entryMoods = await _database.Table<EntrySecondaryMood>()
+                .Where(e => e.EntryId == entry.Id)
+                .ToListAsync().ConfigureAwait(false);
+            
+            entry.SecondaryMoodsList = new List<SecondaryMood>();
+            foreach(var em in entryMoods)
+            {
+                var sm = await _database.Table<SecondaryMood>().Where(s => s.Id == em.SecondaryMoodId).FirstOrDefaultAsync().ConfigureAwait(false);
+                if(sm != null) entry.SecondaryMoodsList.Add(sm);
+            }
+            // Sync legacy string for UI back-compat if needed
+            entry.SecondaryMood = string.Join(", ", entry.SecondaryMoodsList.Select(s => s.Name));
         }
 
         // OPTIMIZED: Batch load relations for multiple entries (fixes N+1 query problem)
@@ -235,16 +302,26 @@ namespace JournalApp.Data
             var allCategories = await _database.Table<Category>().ToListAsync().ConfigureAwait(false);
             var allTags = await _database.Table<Tag>().ToListAsync().ConfigureAwait(false);
             var allEntryTags = await _database.Table<EntryTag>().ToListAsync().ConfigureAwait(false);
+            
+            // Load all Secondary Moods data
+            var allSecMoods = await _database.Table<SecondaryMood>().ToListAsync().ConfigureAwait(false);
+            var allEntrySecMoods = await _database.Table<EntrySecondaryMood>().ToListAsync().ConfigureAwait(false);
 
             // Create lookup dictionaries
             var moodDict = allMoods.ToDictionary(m => m.Id);
             var categoryDict = allCategories.ToDictionary(c => c.Id);
             var tagDict = allTags.ToDictionary(t => t.Id);
+            var secMoodDict = allSecMoods.ToDictionary(s => s.Id);
             
             var entryIds = entries.Select(e => e.Id).ToList();
             var entryTagsDict = allEntryTags
                 .Where(et => entryIds.Contains(et.EntryId))
                 .GroupBy(et => et.EntryId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var entrySecMoodsDict = allEntrySecMoods
+                .Where(e => entryIds.Contains(e.EntryId))
+                .GroupBy(e => e.EntryId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             // Assign relations to each entry using lookups (O(1) instead of O(n))
@@ -274,6 +351,21 @@ namespace JournalApp.Data
                         }
                     }
                 }
+
+                // Assign secondary moods
+                entry.SecondaryMoodsList = new List<SecondaryMood>();
+                if (entrySecMoodsDict.ContainsKey(entry.Id))
+                {
+                    foreach (var em in entrySecMoodsDict[entry.Id])
+                    {
+                        if (secMoodDict.ContainsKey(em.SecondaryMoodId))
+                        {
+                            entry.SecondaryMoodsList.Add(secMoodDict[em.SecondaryMoodId]);
+                        }
+                    }
+                }
+                // Sync legacy string
+                entry.SecondaryMood = string.Join(", ", entry.SecondaryMoodsList.Select(s => s.Name));
             }
         }
 
@@ -290,6 +382,25 @@ namespace JournalApp.Data
                     EntryId = entry.Id,
                     TagId = tag.Id
                 }).ConfigureAwait(false);
+            }
+        }
+
+        private async Task SaveEntrySecondaryMoods(JournalEntry entry)
+        {
+             // Remove existing
+            await _database.ExecuteAsync("DELETE FROM EntrySecondaryMood WHERE EntryId = ?", entry.Id).ConfigureAwait(false);
+
+            // Add new
+            if (entry.SecondaryMoodsList != null)
+            {
+                foreach (var sm in entry.SecondaryMoodsList)
+                {
+                    await _database.InsertAsync(new EntrySecondaryMood
+                    {
+                        EntryId = entry.Id,
+                        SecondaryMoodId = sm.Id
+                    }).ConfigureAwait(false);
+                }
             }
         }
 
@@ -312,6 +423,29 @@ namespace JournalApp.Data
         {
             await Init().ConfigureAwait(false);
             return await _database.Table<Mood>().Where(m => m.Id == id).FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        public async Task<List<SecondaryMood>> GetSecondaryMoodsAsync()
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<SecondaryMood>().ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<int> SaveSecondaryMoodAsync(SecondaryMood item)
+        {
+             await Init().ConfigureAwait(false);
+             if (item.Id != 0)
+                 return await _database.UpdateAsync(item).ConfigureAwait(false);
+             else
+                 return await _database.InsertAsync(item).ConfigureAwait(false);
+        }
+
+        public async Task<int> DeleteSecondaryMoodAsync(int id)
+        {
+            await Init().ConfigureAwait(false);
+            // Also need to cleanup EntrySecondaryMoods? Or let them point to nothing? Better to cleanup.
+            await _database.ExecuteAsync("DELETE FROM EntrySecondaryMood WHERE SecondaryMoodId = ?", id).ConfigureAwait(false);
+            return await _database.DeleteAsync<SecondaryMood>(id).ConfigureAwait(false);
         }
 
         #endregion
@@ -346,6 +480,13 @@ namespace JournalApp.Data
             return await _database.Table<Tag>()
                 .Where(t => t.Name == tagName && t.UserId == userId)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        public async Task<int> DeleteTagAsync(int id)
+        {
+            await Init().ConfigureAwait(false);
+            await _database.ExecuteAsync("DELETE FROM EntryTag WHERE TagId = ?", id).ConfigureAwait(false);
+            return await _database.DeleteAsync<Tag>(id).ConfigureAwait(false);
         }
 
         #endregion

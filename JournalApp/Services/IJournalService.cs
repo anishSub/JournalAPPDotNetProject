@@ -38,5 +38,11 @@ namespace JournalApp.Services
         Task<List<Mood>> GetMoodsAsync();
         Task<List<Tag>> GetTagsAsync();
         Task<Tag?> GetOrCreateTagAsync(string tagName);
+        Task<int> DeleteTagAsync(string tagName); 
+
+        // Secondary Moods
+        Task<List<SecondaryMood>> GetSecondaryMoodsAsync();
+        Task<int> SaveSecondaryMoodAsync(SecondaryMood mood);
+        Task<int> DeleteSecondaryMoodAsync(int id);
     }
 }

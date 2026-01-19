@@ -1,0 +1,73 @@
+@page "/tags"
+@inject JournalApp.Services.IJournalService JournalService
+@inject JournalApp.Services.ToastService ToastService
+
+<div class="tags-container">
+    <h2>Manage Tags</h2>
+
+    <div class="add-tag-section">
+        <input type="text" @bind="NewTagInput" placeholder="Enter new tag..." />
+        <button @onclick="AddTag">
+            Add Tag
+        </button>
+    </div>
+
+    <div class="tags-grid">
+        @if (UserTags.Any())
+        {
+            @foreach (var tag in UserTags)
+            {
+                <div class="tag-chip">
+                    <span>#@tag.Name</span>
+                    <button @onclick="() => DeleteTag(tag.Name)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            }
+        }
+        else
+        {
+            <p style="color: var(--text-secondary);">No tags found. Create one to get started!</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<JournalApp.Models.Tag> UserTags = new();
+    private string NewTagInput = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTags();
+    }
+
+    private async Task LoadTags()
+    {
+        UserTags = await JournalService.GetTagsAsync();
+    }
+
+    private async Task AddTag()
+    {
+        if (string.IsNullOrWhiteSpace(NewTagInput)) return;
+
+        var existing = UserTags.FirstOrDefault(t => t.Name.Equals(NewTagInput.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            await JournalService.GetOrCreateTagAsync(NewTagInput.Trim());
+            ToastService.ShowSuccess($"Tag '#{NewTagInput}' created!");
+            NewTagInput = "";
+            await LoadTags();
+        }
+        else
+        {
+             ToastService.ShowError("Tag already exists!");
+        }
+    }
+
+    private async Task DeleteTag(string tagName)
+    {
+        await JournalService.DeleteTagAsync(tagName);
+        ToastService.ShowSuccess($"Tag '#{tagName}' deleted!");
+        await LoadTags();
+    }
+}

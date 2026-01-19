@@ -1,0 +1,234 @@
+.moods-container {
+  padding: 2rem;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* Add Form */
+.add-mood-card {
+  background: var(--card-background);
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.add-mood-card h3 {
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  /* Prevent label wrapping */
+}
+
+.form-group select,
+.form-group input {
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--input-background);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.form-group select {
+  min-width: 160px;
+  /* Reduced from 200px */
+  flex-shrink: 1;
+  /* Allow shrinking */
+}
+
+.emoji-group input {
+  width: 70px;
+  /* Reduced from 80px */
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.name-group {
+  flex: 1;
+  min-width: 180px;
+  /* Reduced from 250px */
+}
+
+.name-group input {
+  width: 100%;
+}
+
+.btn-add {
+  padding: 0.875rem 2rem;
+  /* Slightly reduced padding */
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: opacity 0.2s;
+  height: 50px;
+  /* Force height match with inputs */
+  margin-bottom: 0px;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+/* Groups */
+.mood-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mood-group-block {
+  background: var(--card-background);
+  border-radius: 1rem;
+  border: 1px solid;
+  /* Color set inline */
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.group-header {
+  padding: 1rem 2rem;
+  color: white;
+}
+
+.group-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.group-items {
+  padding: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.mood-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 2.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.mood-chip:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.chip-emoji {
+  font-size: 1.5rem;
+}
+
+.chip-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.delete-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border-radius: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.mood-chip:hover .delete-overlay {
+  opacity: 1;
+}
+
+.empty-group {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 1rem;
+  padding: 1rem 0;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .moods-container {
+    padding: 1rem;
+    width: 100%;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .form-group select,
+  .emoji-group input,
+  .name-group input {
+    width: 100%;
+  }
+
+  .btn-add {
+    width: 100%;
+  }
+}

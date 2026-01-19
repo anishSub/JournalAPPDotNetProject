@@ -1,0 +1,154 @@
+@page "/moods"
+@inject JournalApp.Services.IJournalService JournalService
+@inject JournalApp.Services.ToastService ToastService
+@inject IJSRuntime JSRuntime
+
+<div class="moods-container">
+    <h2>Manage Moods</h2>
+
+    <!-- Add New Mood Form -->
+    <div class="add-mood-card">
+        <h3>Add New Mood</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Primary Mood</label>
+                <select @bind="SelectedParentId">
+                    @foreach (var p in ParentMoods)
+                    {
+                        <option value="@p.Id">@p.Name @p.Emoji</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group emoji-group">
+                <label>Emoji</label>
+                <input type="text" @bind="NewMoodEmoji" placeholder="😊" maxlength="2" />
+            </div>
+            <div class="form-group name-group">
+                <label>Name</label>
+                <input type="text" @bind="NewMoodName" placeholder="e.g. Grateful" />
+            </div>
+            <div class="form-actions">
+                <button @onclick="AddMood" class="btn-add">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grouped Mood Lists -->
+    <div class="mood-groups-container">
+        @foreach (var group in GroupedMoods)
+        {
+            <div class="mood-group-block" style="border-color: @GetColor(group.Key)">
+                <div class="group-header" style="background-color: @GetColor(group.Key)">
+                    <h3>@group.Key</h3> 
+                </div>
+                
+                <div class="group-items">
+                    @if (group.Value.Any())
+                    {
+                        @foreach (var mood in group.Value)
+                        {
+                            <div class="mood-chip" @onclick="() => DeleteMood(mood.Id)" title="Click to delete">
+                                <span class="chip-emoji">@mood.Emoji</span>
+                                <span class="chip-name">@mood.Name</span>
+                                <div class="delete-overlay">×</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="empty-group">No moods yet.</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<JournalApp.Models.Mood> ParentMoods = new();
+    private List<JournalApp.Models.SecondaryMood> SecondaryMoods = new();
+    
+    // Grouped data for display
+    private Dictionary<string, List<JournalApp.Models.SecondaryMood>> GroupedMoods = new();
+
+    private int SelectedParentId;
+    private string NewMoodName = "";
+    private string NewMoodEmoji = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // 1. Fetch all parent moods but Filter to ONLY the 3 Primary ones
+        var allParents = await JournalService.GetMoodsAsync();
+        ParentMoods = allParents.Where(p => 
+            p.Name == "Positive" || 
+            p.Name == "Neutral" || 
+            p.Name == "Negative").ToList();
+
+        SecondaryMoods = await JournalService.GetSecondaryMoodsAsync();
+        
+        if (ParentMoods.Any() && SelectedParentId == 0)
+        {
+            SelectedParentId = ParentMoods.First().Id;
+        }
+
+        GroupedMoods = new Dictionary<string, List<JournalApp.Models.SecondaryMood>>();
+        
+        // 2. Only grouping by the 3 Primary Moods
+        var orderedNames = new[] { "Positive", "Neutral", "Negative" };
+        foreach (var name in orderedNames)
+        {
+            var parent = ParentMoods.FirstOrDefault(p => p.Name == name);
+            if (parent != null)
+            {
+                GroupedMoods[name] = SecondaryMoods.Where(s => s.ParentMoodId == parent.Id).ToList();
+            }
+        }
+        // Removed the extra loop that was displaying unwanted parents
+    }
+
+    private string GetColor(string name) => name switch
+    {
+        "Positive" => "#10b981", // Green
+        "Neutral" => "#64748b",  // Slate
+        "Negative" => "#ef4444", // Red
+        _ => "#64748b"
+    };
+
+    private async Task AddMood()
+    {
+        if (string.IsNullOrWhiteSpace(NewMoodName) || string.IsNullOrWhiteSpace(NewMoodEmoji))
+        {
+            ToastService.ShowError("Emoji and Name required!");
+            return;
+        }
+
+        var newMood = new JournalApp.Models.SecondaryMood
+        {
+            Name = NewMoodName.Trim(),
+            Emoji = NewMoodEmoji.Trim(),
+            ParentMoodId = SelectedParentId
+        };
+
+        await JournalService.SaveSecondaryMoodAsync(newMood);
+        ToastService.ShowSuccess("Added!");
+        
+        NewMoodName = "";
+        NewMoodEmoji = "";
+        await LoadData();
+    }
+
+    private async Task DeleteMood(int id)
+    {
+        bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Delete this mood?");
+        if (confirm)
+        {
+            await JournalService.DeleteSecondaryMoodAsync(id);
+            await LoadData();
+        }
+    }
+}

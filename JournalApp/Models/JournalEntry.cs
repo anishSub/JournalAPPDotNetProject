@@ -49,6 +49,9 @@ namespace JournalApp.Models
         [SQLite.Ignore]
         public List<Tag> Tags { get; set; } = new();
 
+        [SQLite.Ignore]
+        public List<SecondaryMood> SecondaryMoodsList { get; set; } = new();
+
         // BACKWARD COMPATIBILITY: Keep these for existing UI code
         // These will be populated from the Mood object
         [SQLite.Ignore]
