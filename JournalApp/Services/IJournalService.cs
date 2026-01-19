@@ -44,5 +44,7 @@ namespace JournalApp.Services
         Task<List<SecondaryMood>> GetSecondaryMoodsAsync();
         Task<int> SaveSecondaryMoodAsync(SecondaryMood mood);
         Task<int> DeleteSecondaryMoodAsync(int id);
+        
+        Task<User?> GetUserAsync();
     }
 }

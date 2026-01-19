@@ -219,5 +219,10 @@ namespace JournalApp.Services
         {
             return await _database.DeleteSecondaryMoodAsync(id).ConfigureAwait(false);
         }
+
+        public async Task<User?> GetUserAsync()
+        {
+            return await _database.GetUserAsync("default-user").ConfigureAwait(false);
+        }
     }
 }

@@ -450,6 +450,16 @@ namespace JournalApp.Data
 
         #endregion
 
+        #region User CRUD
+        
+        public async Task<User?> GetUserAsync(string id)
+        {
+            await Init().ConfigureAwait(false);
+            return await _database.Table<User>().Where(u => u.Id == id).FirstOrDefaultAsync().ConfigureAwait(false);
+        }
+
+        #endregion
+
 
 
 
