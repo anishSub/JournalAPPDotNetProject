@@ -148,6 +148,7 @@
         if (confirm)
         {
             await JournalService.DeleteSecondaryMoodAsync(id);
+            ToastService.ShowSuccess("Mood deleted!");
             await LoadData();
         }
     }

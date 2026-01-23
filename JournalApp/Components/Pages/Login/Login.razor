@@ -17,14 +17,14 @@
             <div class="form-group">
                 <label for="password">@(_isSetupMode ? "New Password" : (_isPinMode ? "PIN" : "Password"))</label>
                 <div class="password-input-wrapper">
-                    <input id="password" 
+                   <input id="password" 
                                type="@(_showPassword ? "text" : "password")" 
                                inputmode="@(_isPinMode ? "numeric" : "text")"
-                               pattern="@(_isPinMode ? "[0-9]*" : "")"
+                               pattern="@(_isPinMode ? "[0-9]*" : null)"
                                @bind="_loginModel.Password" 
                                class="form-control" 
                                placeholder="@(_isSetupMode ? "Choose a password" : (_isPinMode ? "Enter PIN" : "Enter your password"))"
-                               maxlength="@(_isPinMode ? "4" : "50")" />
+                               maxlength="@(_isPinMode ? "4" : "100")" />
                     
                     <button type="button" class="toggle-password" @onclick="TogglePassword">
                         @if (_showPassword)
