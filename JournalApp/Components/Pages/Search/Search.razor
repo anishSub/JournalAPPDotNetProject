@@ -150,7 +150,6 @@
     <!-- Export Modal -->
 
     <!-- Hidden Export Container -->
-    <!-- Hidden Export Container -->
     <div id="export-container" style="display: none;">
         <div style="padding: 20px; font-family: sans-serif; color: black; max-width: 800px; margin: 0 auto;">
             <h1 style="text-align: center; color: #2563eb; margin-bottom: 5px;">Journal Entries</h1>
@@ -192,6 +191,10 @@
 
 
 
+    /// <summary>
+    /// Lifecycle hook triggered after rendering.
+    /// Performs an initial search on first render to populate the list.
+    /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -201,6 +204,10 @@
         }
     }
 
+    /// <summary>
+    /// Executes the search logic based on the current query, mood, tag, and date filters.
+    /// Updates the FilteredEntries list and manages loading state.
+    /// </summary>
     private async Task PerformSearch()
     {
         _isLoading = true;
@@ -253,6 +260,9 @@
         }
     }
 
+    /// <summary>
+    /// Resets all search filters (Query, Mood, Tag, Dates) to defaults and refreshes the list.
+    /// </summary>
     private async Task ClearFilters()
     {
         SearchQuery = "";
@@ -275,6 +285,10 @@
     // List to hold entries for export
     private List<JournalEntry> ExportEntries { get; set; } = new();
 
+    /// <summary>
+    /// Generates a PDF export of the currently filtered entries.
+    /// Uses JS interop to create the PDF from the HTML content.
+    /// </summary>
     private async Task ExportPdf()
     {
         if (!FilteredEntries.Any())

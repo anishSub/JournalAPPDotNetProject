@@ -87,6 +87,10 @@
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private JournalApp.Services.ToastService ToastService { get; set; } = default!;
 
+    /// <summary>
+    /// Lifecycle method called when the component is initialized.
+    /// Checks for existing password or PIN configuration to determine the initial mode (Setup vs Login).
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         var hasPassword = await AuthService.HasPasswordAsync();
@@ -102,11 +106,18 @@
         }
     }
 
+    /// <summary>
+    /// Toggles the visibility of the password input field.
+    /// </summary>
     private void TogglePassword()
     {
         _showPassword = !_showPassword;
     }
     
+    /// <summary>
+    /// Switches the authentication mode from PIN to full Password.
+    /// Clears any input and error messages.
+    /// </summary>
     private void SwitchToPassword()
     {
         _isPinMode = false;
@@ -114,6 +125,10 @@
         _errorMessage = "";
     }
 
+    /// <summary>
+    /// Handles the form submission for login or password setup.
+    /// Validates credentials against AuthService and navigates to Home on success.
+    /// </summary>
     private async Task HandleLogin()
     {
         _isLoading = true;

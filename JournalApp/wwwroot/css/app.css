@@ -17,7 +17,6 @@
     --destructive: #d4183d;
     --destructive-foreground: #ffffff;
     --border: rgba(0, 0, 0, 0.2);
-    /* Increased from 0.1 for better visibility */
     --input: transparent;
     --input-background: #f3f3f5;
     --switch-background: #cbced4;
@@ -39,23 +38,16 @@
     --sidebar-border: #ebebeb;
     --sidebar-ring: #b4b4b4;
 
-    /* --- ALIAS MAPPING (Old names -> New structure) --- */
+    /* --- Theme Aliases (Mapping to Global Tokens) --- */
     --app-bg: var(--background);
     --surface-card: var(--card);
     --text-main: var(--foreground);
     --text-secondary: var(--muted-foreground);
     --text-inverse: var(--primary-foreground);
-    /* --primary from above is #030213 (Dark/Black). 
-       The user's previous design used Blue (#2563eb).
-       If they want Blue for primary actions but Black for theme primary, 
-       we might need a separate --action-color. 
-       For now, we'll map --primary to the standard primary.
-    */
-    /* --primary: defined above */
+
+    /* Component Specific Aliases */
     --primary-hover: #1d4ed8;
-    /* Fallback */
     --primary-light: var(--muted);
-    /* --border: defined above */
     --input-bg: var(--input-background);
     --input-placeholder: var(--muted-foreground);
     --focus-ring: var(--ring);
@@ -66,8 +58,9 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+/* --- Dark Theme Configuration --- */
 .dark {
-    /* Blue Dark Theme Palette */
+    /* Base Palette */
     --background: #101828;
     --foreground: #fcfcfc;
 
@@ -136,9 +129,8 @@ body {
     box-sizing: border-box;
 }
 
-/* ========================================= */
-/* SIDEBAR STYLES (Moved from NavMenu.razor.css) */
-/* ========================================= */
+/* --- Sidebar Layout & Components --- */
+/* (Includes styles originally from NavMenu.razor.css) */
 
 .sidebar {
     width: 16rem;
@@ -354,9 +346,8 @@ body {
     border-color: var(--border);
 }
 
-/* ========================================= */
-/* SKELETON LOADING & HIGHLIGHT (New) */
-/* ========================================= */
+/* --- Loading States & Visual Effects --- */
+/* Shimmer effects for skeleton loading and search highlighting */
 
 @keyframes shimmer {
     0% {
@@ -443,9 +434,7 @@ body {
     color: black;
 }
 
-/* ========================================= */
-/* RESPONSIVE: LARGE SCREENS (Side Bar) */
-/* ========================================= */
+/* --- Responsive Design (Desktop) --- */
 @media (min-width: 1280px) {
     .sidebar {
         width: 20rem;

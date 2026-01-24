@@ -201,6 +201,9 @@
     private string _newPin = "";
     private string _memberSince = "January 2026"; // Default fallback
 
+    /// <summary>
+    /// Initializes the settings page by loading user profile data, security status, and app theme.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         // ... existing loading code ...
@@ -248,6 +251,10 @@
         _isSetPinVisible = false;
     }
 
+    /// <summary>
+    /// Validates and saves the new master password.
+    /// Requires minimum length of 4 characters.
+    /// </summary>
     private async Task SaveNewPassword()
     {
         if (!string.IsNullOrWhiteSpace(_newPassword) && _newPassword.Length >= 4)
@@ -263,6 +270,10 @@
         }
     }
 
+    /// <summary>
+    /// Toggles the PIN security feature.
+    /// If PIN exists, prompts to remove it. If not, shows input to set a new PIN.
+    /// </summary>
     private async Task TogglePin()
     {
         if (_hasPin)
@@ -366,6 +377,10 @@
         }
     }
 
+    /// <summary>
+    /// Saves the updated user profile information (Name and Image).
+    /// Persists data to Preferences and Toast notification.
+    /// </summary>
     private void SaveProfile()
     {
         if (string.IsNullOrWhiteSpace(_userName))

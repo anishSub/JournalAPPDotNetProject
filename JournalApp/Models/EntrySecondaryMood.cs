@@ -2,6 +2,12 @@ using SQLite;
 
 namespace JournalApp.Models
 {
+    /// <summary>
+    /// Junction table for the many-to-many relationship between JournalEntry and SecondaryMood.
+    /// Relationships:
+    /// - Foreign Key to JournalEntry
+    /// - Foreign Key to SecondaryMood
+    /// </summary>
     public class EntrySecondaryMood
     {
         [PrimaryKey, AutoIncrement]

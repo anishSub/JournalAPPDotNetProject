@@ -220,6 +220,10 @@
         await RenderWordCountChart();
     }
 
+    /// <summary>
+    /// Centralized data loader that fetches all entries once and then triggers
+    /// stats calculation and chart rendering.
+    /// </summary>
     private async Task LoadDataAndStats()
     {
         // 1. Fetch EVERYTHING once
@@ -234,6 +238,10 @@
         await RenderChartsInternal(allEntries);
     }
 
+    /// <summary>
+    /// Calculates dashboard statistics (Streaks, Frequent Mood, Missed Days)
+    /// based on the provided list of entries (in-memory).
+    /// </summary>
     private void CalculateStats(List<JournalApp.Models.JournalEntry> entries)
     {
         // Streaks Logic (Replicated from JournalService to avoid re-fetching)
@@ -346,6 +354,9 @@
         _ => "😊"
     };
 
+    /// <summary>
+    /// Filters the data based on current date range and updates all charts (Mood, Tags, Word Count).
+    /// </summary>
     private async Task RenderChartsInternal(List<JournalApp.Models.JournalEntry> allEntries)
     {
          // Filter Data (Date Range)

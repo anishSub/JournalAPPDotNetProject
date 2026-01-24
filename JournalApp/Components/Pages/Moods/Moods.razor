@@ -80,6 +80,9 @@
         await LoadData();
     }
 
+    /// <summary>
+    /// Fetches all Secondary moods and groups them by their Parent (Positive/Neutral/Negative).
+    /// </summary>
     private async Task LoadData()
     {
         // 1. Fetch all parent moods but Filter to ONLY the 3 Primary ones
@@ -119,6 +122,10 @@
         _ => "#64748b"
     };
 
+    /// <summary>
+    /// Creates a new Secondary Mood (e.g. "Excited" under "Positive").
+    /// Validates input and refreshes the list on success.
+    /// </summary>
     private async Task AddMood()
     {
         if (string.IsNullOrWhiteSpace(NewMoodName) || string.IsNullOrWhiteSpace(NewMoodEmoji))
@@ -142,6 +149,9 @@
         await LoadData();
     }
 
+    /// <summary>
+    /// Deletes a secondary mood after confirmation.
+    /// </summary>
     private async Task DeleteMood(int id)
     {
         bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Delete this mood?");

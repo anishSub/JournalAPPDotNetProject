@@ -1,7 +1,7 @@
 .home-container {
   min-height: 100vh;
   padding: 2rem 0;
-  /* py-8 */
+  padding: 2rem 0;
   background-color: var(--app-bg);
 }
 
@@ -9,13 +9,13 @@
   max-width: 1600px;
   margin: 0 auto;
   padding: 0 2rem;
-  /* px-8 */
+  padding: 0 2rem;
 }
 
 /* Header */
 .header-section {
   margin-bottom: 2rem;
-  /* mb-8 */
+  margin-bottom: 2rem;
 }
 
 .header-top {
@@ -23,12 +23,12 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
-  /* mb-6 */
+  margin-bottom: 1.5rem;
 }
 
 .header-top h2 {
   font-size: 1.875rem;
-  /* text-3xl */
+  font-size: 1.875rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
@@ -44,7 +44,7 @@
   color: white;
   border: none;
   border-radius: 0.5rem;
-  /* rounded-lg */
+  border-radius: 0.5rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -72,9 +72,9 @@
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 3rem;
-  /* pl-12 */
+  padding: 0.75rem 1rem 0.75rem 3rem;
   border-radius: 0.75rem;
-  /* rounded-xl */
+  border-radius: 0.75rem;
   border: 1px solid var(--border);
   background-color: var(--surface-card);
   color: var(--text-main);
@@ -95,9 +95,9 @@
 /* Entries Grid */
 .entries-section h3 {
   font-size: 1.25rem;
-  /* text-xl */
+  font-size: 1.25rem;
   color: var(--text-secondary);
-  /* React: gray-700/300 */
+  color: var(--text-secondary);
   margin-bottom: 1rem;
   font-weight: 600;
 }
@@ -147,7 +147,6 @@
 
 .page-btn:hover:not(:disabled) {
   background-color: var(--app-bg);
-  /* darker shade/lighter shade */
   border-color: var(--border);
 }
 
@@ -161,7 +160,7 @@
   opacity: 0.5;
   cursor: not-allowed;
   background-color: var(--app-bg);
-  /* gray-200/800 */
+  background-color: var(--app-bg);
 }
 
 .page-btn.number {

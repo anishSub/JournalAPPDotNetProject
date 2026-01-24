@@ -4,6 +4,9 @@ namespace JournalApp.Models
 {
     /// <summary>
     /// Represents a category for organizing journal entries.
+    /// Relationships:
+    /// - Many-to-One with User: Owned by a specific user.
+    /// - One-to-Many with JournalEntry: Used by multiple entries.
     /// </summary>
     public class Category
     {

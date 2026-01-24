@@ -102,6 +102,10 @@
     private const int EntriesPerPage = 8;
     private List<JournalEntry> AllEntries = new();
 
+    /// <summary>
+    /// Initializes the component by fetching all journal entries.
+    /// Also checks if a "Welcome" toast should be displayed for a new login.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         AllEntries = await JournalService.GetAllEntriesAsync();
@@ -130,6 +134,10 @@
         Navigation.NavigateTo("journal/create");
     }
 
+    /// <summary>
+    /// Filters the full list of entries based on the user's search query.
+    /// Search is case-insensitive and checks both Title and Preview text.
+    /// </summary>
     private IEnumerable<JournalEntry> FilteredEntries => 
         AllEntries
         .Where(e => string.IsNullOrWhiteSpace(SearchQuery) ||
@@ -142,6 +150,9 @@
 
     private int TotalPages => (int)Math.Ceiling(FilteredEntries.Count() / (double)EntriesPerPage);
 
+    /// <summary>
+    /// Navigates to the previous page of entries.
+    /// </summary>
     private void PrevPage()
     {
         if (CurrentPage > 1) CurrentPage--;
@@ -157,6 +168,10 @@
         CurrentPage = page;
     }
 
+    /// <summary>
+    /// Generates a list of page numbers for the pagination control.
+    /// Includes logic to show ellipsis (-1) for large page counts.
+    /// </summary>
     private List<int> GetPageNumbers()
     {
         var pages = new List<int>();

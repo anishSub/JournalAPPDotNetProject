@@ -14,7 +14,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-            //.UseLocalNotification()
+            // Fonts Configuration
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -23,11 +23,15 @@ public static class MauiProgram
 		builder.Services.AddMauiBlazorWebView();
 
         // Register core services for Dependency Injection (DI)
-        // Singleton: Created once and shared across the entire app lifecycle
+        
+        // Database Service (Singleton)
         builder.Services.AddSingleton<JournalApp.Data.JournalDatabase>();
+        
+        // Business Logic Services (Singleton)
         builder.Services.AddSingleton<JournalApp.Services.IJournalService, JournalApp.Services.JournalService>();
         builder.Services.AddSingleton<JournalApp.Services.AuthService>();
-        //toast notification service 
+        
+        // UI Helpers
         builder.Services.AddSingleton<JournalApp.Services.ToastService>();
 
 #if DEBUG
@@ -37,15 +41,8 @@ public static class MauiProgram
 
         var app = builder.Build();
 
-        // DISABLED: Migration was causing UI thread deadlock
-        // The database will initialize and seed data automatically on first use
-        // Task.Run(async () =>
-        // {
-        //     if (await JournalApp.Data.DataMigration.MigrationNeeded(JournalApp.Data.Constants.DatabasePath))
-        //     {
-        //         await JournalApp.Data.DataMigration.PerformMigration(JournalApp.Data.Constants.DatabasePath);
-        //     }
-        // }).Wait();
+        // Database initialization and seeding is handled automatically by the JournalDatabase service
+        // when methods like GetEntriesAsync are called for the first time.
 
 		return app;
 	}

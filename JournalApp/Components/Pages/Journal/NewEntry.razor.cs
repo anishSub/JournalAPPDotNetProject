@@ -115,6 +115,10 @@ namespace JournalApp.Components.Pages.Journal
         
         private string _existingId = "";
 
+        /// <summary>
+        /// Lifecycle method triggered when parameters are set (e.g., navigation to edit route).
+        /// Handles loading existing entries by ID or Route/Query param Date.
+        /// </summary>
         protected override async Task OnParametersSetAsync()
         {
             try 
@@ -180,6 +184,10 @@ namespace JournalApp.Components.Pages.Journal
             }
         }
 
+        /// <summary>
+        /// Loads a specific entry from the database using its GUID.
+        /// Populates the form fields (Title, Content, Moods, Tags).
+        /// </summary>
         protected async Task LoadEntryById(string id)
         {
             var existingEntry = await JournalService.GetEntryByIdAsync(id);
@@ -225,6 +233,10 @@ namespace JournalApp.Components.Pages.Journal
             }
         }
 
+        /// <summary>
+        /// Checks if an entry already exists for the selected `Date`.
+        /// If found, loads it into the editor (Preventing duplicate daily entries).
+        /// </summary>
         protected async Task CheckEntryExists()
         {
             var existingEntry = await JournalService.GetEntryByDateAsync(Date);
@@ -302,6 +314,10 @@ namespace JournalApp.Components.Pages.Journal
 
         // ... (Middle code unchanged) ...
 
+        /// <summary>
+        /// Saves the current journal entry to the database.
+        /// Handles creation (New) vs Update (Existing) logic and validation.
+        /// </summary>
         protected async Task SaveEntry()
         {
             try
@@ -409,6 +425,9 @@ namespace JournalApp.Components.Pages.Journal
             }
         }
 
+        /// <summary>
+        /// Deletes the currently open entry after user confirmation.
+        /// </summary>
         protected async Task DeleteEntry()
         {
             try
@@ -533,6 +552,10 @@ namespace JournalApp.Components.Pages.Journal
             }
         }
 
+        /// <summary>
+        /// Adds a new custom tag to the entry's tag list.
+        /// Updates the suggestion list if the tag is new.
+        /// </summary>
         protected async Task AddTag()
         {
             try

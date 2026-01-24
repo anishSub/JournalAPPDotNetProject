@@ -6,7 +6,7 @@
 
 .settings-content {
   max-width: 896px;
-  /* Default for single column */
+  max-width: 896px;
   margin: 0 auto;
 }
 
@@ -21,7 +21,7 @@
 @media (min-width: 1280px) {
   .settings-content {
     max-width: 1600px;
-    /* Expand for grid */
+    max-width: 1600px;
   }
 
   .settings-grid {
@@ -29,7 +29,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     align-items: start;
-    /* Let cards be natural height */
+    align-items: start;
   }
 
   /* Right column wrapper */
@@ -326,9 +326,9 @@
   padding: 0.75rem;
   background-color: transparent;
   border: 1px solid #ef4444;
-  /* Red-500 border */
+  border: 1px solid #ef4444;
   color: #ef4444;
-  /* Red-500 text */
+  color: #ef4444;
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
@@ -347,12 +347,10 @@
   color: var(--text-main);
   border: 1px solid var(--border);
   padding: 0.75rem 1.5rem;
-  /* Increased padding */
+  padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 600;
-  /* Bolder */
   font-size: 1rem;
-  /* Larger text */
   cursor: pointer;
   transition: all 0.2s;
 }

@@ -161,11 +161,17 @@
         }
     }
 
+    /// <summary>
+    /// Fetches all journal entries for the current month view.
+    /// </summary>
     private async Task LoadEntries()
     {
         EntriesForMonth = await JournalService.GetEntriesForMonthAsync(CurrentMonth.Month, CurrentMonth.Year);
     }
 
+    /// <summary>
+    /// Navigates the calendar view to the previous month.
+    /// </summary>
     private async Task PrevMonth()
     {
         CurrentMonth = CurrentMonth.AddMonths(-1);
@@ -180,11 +186,17 @@
         await LoadEntries();
     }
 
+    /// <summary>
+    /// Updates the selected date state when a user clicks a day cell.
+    /// </summary>
     private void SelectDate(int day)
     {
         SelectedDate = new DateTime(CurrentMonth.Year, CurrentMonth.Month, day);
     }
 
+    /// <summary>
+    /// Checks if a specific date has any journal entries (for dot indicator).
+    /// </summary>
     private bool HasEntry(DateTime date)
     {
          return EntriesForMonth.Any(e => e.Date.Date == date.Date);

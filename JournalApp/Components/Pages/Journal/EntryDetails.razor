@@ -88,11 +88,17 @@
 
     private JournalEntry? _entry;
 
+    /// <summary>
+    /// Fetches the Journal Entry details based on the Route Parameter ID.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         _entry = await JournalService.GetEntryByIdAsync(Id);
     }
 
+    /// <summary>
+    /// Navigates the user back to the Home page.
+    /// </summary>
     private void GoBack()
     {
         Navigation.NavigateTo("/"); // Or history back if possible, but NavigationManager doesn't support GoBack easily without JS. Defaulting to Home or checking History state would be better, but simple is ok.

@@ -4,6 +4,9 @@ namespace JournalApp.Models
 {
     /// <summary>
     /// Junction table for the many-to-many relationship between JournalEntry and Tag.
+    /// Relationships:
+    /// - Foreign Key to JournalEntry
+    /// - Foreign Key to Tag
     /// </summary>
     public class EntryTag
     {

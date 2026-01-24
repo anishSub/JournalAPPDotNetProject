@@ -16,6 +16,11 @@ namespace JournalApp.Data
         private static bool _initialized = false;
         private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
 
+        /// <summary>
+        /// Initializes the database connection and creates tables if they don't exist.
+        /// Also ensures default data (seed data) is present.
+        /// Uses a semaphore to prevent concurrent initialization race conditions.
+        /// </summary>
         async Task Init()
         {
             if (_initialized)
@@ -51,6 +56,10 @@ namespace JournalApp.Data
             }
         }
 
+        /// <summary>
+        /// Populates the database with initial default data (User, Moods, Secondary Moods).
+        /// Runs only if the corresponding tables are empty.
+        /// </summary>
         private async Task SeedDefaultData()
         {
             // Create default user if none exists
@@ -89,6 +98,9 @@ namespace JournalApp.Data
             await SeedSecondaryMoods(requiredMoods).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Seeds detailed secondary moods (e.g., "Excited", "Anxious") linked to the main parent moods.
+        /// </summary>
         private async Task SeedSecondaryMoods(List<Mood> parentMoods)
         {
             var existing = await _database.Table<SecondaryMood>().ToListAsync().ConfigureAwait(false);
@@ -134,6 +146,10 @@ namespace JournalApp.Data
 
         #region JournalEntry CRUD
 
+        /// <summary>
+        /// Retrieves all journal entries from the database.
+        /// Includes eager loading of related data (Moods, Tags, Categories) for each entry.
+        /// </summary>
         public async Task<List<JournalEntry>> GetEntriesAsync()
         {
             await Init().ConfigureAwait(false);
@@ -145,6 +161,10 @@ namespace JournalApp.Data
             return entries;
         }
         
+        /// <summary>
+        /// Retrieves journal entries for a specific month and year.
+        /// Useful for calendar views or monthly reports.
+        /// </summary>
         public async Task<List<JournalEntry>> GetEntriesForMonthAsync(int month, int year)
         {
             await Init().ConfigureAwait(false);
@@ -162,6 +182,9 @@ namespace JournalApp.Data
             return entries;
         }
 
+        /// <summary>
+        /// Retrieves a single journal entry by its unique ID.
+        /// </summary>
         public async Task<JournalEntry?> GetEntryAsync(string id)
         {
             await Init().ConfigureAwait(false);
@@ -175,6 +198,10 @@ namespace JournalApp.Data
             return entry;
         }
 
+        /// <summary>
+        /// Retrieves the first journal entry found for a specific calendar date.
+        /// Used to enforce the "one entry per day" rule or finding daily logs.
+        /// </summary>
         public async Task<JournalEntry?> GetEntryByDateAsync(DateTime date)
         {
             await Init().ConfigureAwait(false);
@@ -195,6 +222,10 @@ namespace JournalApp.Data
             return entry;
         }
 
+        /// <summary>
+        /// Saves or updates a journal entry.
+        /// Handles associated data persistence for Tags and Secondary Moods in join tables.
+        /// </summary>
         public async Task<int> SaveEntryAsync(JournalEntry item)
         {
             await Init().ConfigureAwait(false);
@@ -225,6 +256,9 @@ namespace JournalApp.Data
             return result;
         }
 
+        /// <summary>
+        /// Deletes a journal entry and its related join table records (Tags, Secondary Moods).
+        /// </summary>
         public async Task<int> DeleteEntryAsync(JournalEntry item)
         {
             await Init().ConfigureAwait(false);
@@ -243,6 +277,9 @@ namespace JournalApp.Data
 
         #region Helper Methods
 
+        /// <summary>
+        /// Helper: Loads relative data (Mood, Category, Tags) for a single entry instance.
+        /// </summary>
         private async Task LoadEntryRelations(JournalEntry entry)
         {
             // Load Mood
@@ -293,6 +330,10 @@ namespace JournalApp.Data
         }
 
         // OPTIMIZED: Batch load relations for multiple entries (fixes N+1 query problem)
+        /// <summary>
+        /// Helper: Efficiently bulk-loads relations for a list of entries to minimize database round-trips.
+        /// Solves the N+1 query performance issue.
+        /// </summary>
         private async Task LoadBatchEntryRelations(List<JournalEntry> entries)
         {
             if (!entries.Any()) return;
@@ -413,6 +454,9 @@ namespace JournalApp.Data
 
         #region Mood CRUD
 
+        /// <summary>
+        /// Retrieves all primary moods (Positive, Neutral, Negative).
+        /// </summary>
         public async Task<List<Mood>> GetMoodsAsync()
         {
             await Init().ConfigureAwait(false);
@@ -466,12 +510,19 @@ namespace JournalApp.Data
 
         #region Tag CRUD
 
+        /// <summary>
+        /// Retrieves all custom tags available for a specific user.
+        /// </summary>
         public async Task<List<Tag>> GetTagsAsync(string userId)
         {
             await Init().ConfigureAwait(false);
             return await _database.Table<Tag>().Where(t => t.UserId == userId).ToListAsync().ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Gets an existing tag or creates a new one if it doesn't exist.
+        /// Ensures unique tags per user.
+        /// </summary>
         public async Task<Tag?> GetOrCreateTagAsync(string tagName, string userId)
         {
             await Init().ConfigureAwait(false);
@@ -534,6 +585,10 @@ namespace JournalApp.Data
 
         #region Search
 
+        /// <summary>
+        /// Performs a comprehensive search on journal entries.
+        /// Filters by text content/title, mood class, and tags.
+        /// </summary>
         public async Task<List<JournalEntry>> SearchEntriesAsync(string query, string mood, string tag)
         {
             await Init().ConfigureAwait(false);

@@ -5,6 +5,12 @@ namespace JournalApp.Models
     /// <summary>
     /// Represents a single journal entry made by the user.
     /// Updated to use proper relational foreign keys.
+    /// Relationships:
+    /// - Many-to-One with User: Belongs to a specific user.
+    /// - Many-to-One with Mood: Associated with one primary mood.
+    /// - Many-to-One with Category: Can be assigned to one category.
+    /// - Many-to-Many with Tag (via EntryTag): Can have multiple tags.
+    /// - Many-to-Many with SecondaryMood (via EntrySecondaryMood): Can have multiple secondary moods.
     /// </summary>
     public class JournalEntry
     {

@@ -6,6 +6,3 @@
 *.lock.json
 .DS_Store
 Thumbs.db
-*.md
-*.txt
-.puml

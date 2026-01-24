@@ -46,6 +46,9 @@
         UserTags = await JournalService.GetTagsAsync();
     }
 
+    /// <summary>
+    /// Creates a new global tag if it doesn't already exist.
+    /// </summary>
     private async Task AddTag()
     {
         if (string.IsNullOrWhiteSpace(NewTagInput)) return;
@@ -64,6 +67,9 @@
         }
     }
 
+    /// <summary>
+    /// Deletes an existing tag from the system.
+    /// </summary>
     private async Task DeleteTag(string tagName)
     {
         await JournalService.DeleteTagAsync(tagName);
