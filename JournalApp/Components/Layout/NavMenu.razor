@@ -10,11 +10,8 @@
             <div class="brand-slogan">
                 <span>Private thoughts,</span>
                 <span>safely stored.</span>
-                <!-- <span class="streak-text">@_streak day@(_streak == 1 ? "" : "s") streak 🔥</span> -->
             </div>
         </div>
-        
-        <!-- Theme Toggle Removed -->
     </div>
 
     <nav class="nav-menu">
@@ -100,11 +97,17 @@
     private bool _isDarkMode = false;
     private int _streak = 0;
 
+    /// <summary>
+    /// Initializes the component by fetching the current user streak.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         _streak = await JournalService.GetCurrentStreakAsync();
     }
 
+    /// <summary>
+    /// Lifecycle hook for JS interop after rendering (Theme Sync).
+    /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)

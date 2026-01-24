@@ -8,9 +8,7 @@
 .main-content {
     flex: 1;
     padding: 0 1.5rem;
-    /* Reduced horizontal padding for better spacing */
     margin-left: 16rem;
-    /* Match sidebar width (w-64 = 16rem) */
     width: calc(100% - 16rem);
     position: relative;
     z-index: 0;
@@ -19,10 +17,8 @@
     container-type: inline-size;
     container-name: main-content;
 
-    /* Ensure content can scroll if it overflows viewport height */
-    /* overflow-x: hidden causes issues with sticky headers sometimes, but here we just need normal flow */
+    /* Ensure content can scroll if it overflows */
     min-width: 0;
-    /* Flexbox trick to prevent overflow */
 }
 
 /* Wide Sidebar Adjustment for Large Screens */
