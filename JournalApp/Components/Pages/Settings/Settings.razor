@@ -71,7 +71,14 @@
                                         <InputFile Id="profileUpload" OnChange="HandleFileSelected" style="display: none;" accept=".jpg,.jpeg,.png" />
                                     </div>
                                     <input type="text" @bind="_userName" class="profile-input" placeholder="Enter your name" />
-                                    <button class="btn-save-profile" @onclick="SaveProfile">Save</button>
+                                    @if (HasChanges)
+                                    {
+                                        <button class="btn-save-profile" @onclick="SaveProfile">Save</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-cancel-red" @onclick="CancelEdit">Cancel</button>
+                                    }
                                 </div>
                             }
                             else
@@ -148,8 +155,15 @@
                     @if (_isChangePasswordVisible)
                     {
                         <div class="security-form">
-                            <input type="password" @bind="_newPassword" placeholder="New Password" class="security-input" />
-                            <button class="btn-primary-small" @onclick="SaveNewPassword">Save</button>
+                            <input type="password" @bind="_newPassword" @bind:event="oninput" placeholder="New Password" class="security-input" />
+                            @if (!string.IsNullOrWhiteSpace(_newPassword))
+                            {
+                                <button class="btn-primary-small" @onclick="SaveNewPassword">Save</button>
+                            }
+                            else
+                            {
+                                <button class="btn-cancel-red" @onclick="CloseChangePassword">Cancel</button>
+                            }
                         </div>
                     }
 
@@ -192,6 +206,10 @@
     private string _tempProfileImagePath = "";
     private string _tempBase64 = ""; // For immediate preview
     private bool _isEditingProfile = false;
+    private string _originalUserName = "";
+    
+    // Computed property to check if there are any changes
+    private bool HasChanges => _userName != _originalUserName || !string.IsNullOrEmpty(_tempBase64);
     
     // Security State
     private bool _hasPin = false;
@@ -249,6 +267,13 @@
     {
         _isChangePasswordVisible = !_isChangePasswordVisible;
         _isSetPinVisible = false;
+        _newPassword = ""; // Reset on open
+    }
+
+    private void CloseChangePassword()
+    {
+        _newPassword = "";
+        _isChangePasswordVisible = false;
     }
 
     /// <summary>
@@ -331,9 +356,18 @@
     {
         _isEditingProfile = !_isEditingProfile;
         if (_isEditingProfile) {
+            _originalUserName = _userName;
             _tempProfileImagePath = ""; 
             _tempBase64 = "";
         }
+    }
+    
+    private void CancelEdit()
+    {
+        _userName = _originalUserName;
+        _tempProfileImagePath = "";
+        _tempBase64 = "";
+        _isEditingProfile = false;
     }
     
     private async Task HandleFileSelected(InputFileChangeEventArgs e)

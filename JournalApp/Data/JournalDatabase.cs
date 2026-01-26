@@ -477,11 +477,11 @@ namespace JournalApp.Data
 
         public async Task<int> SaveSecondaryMoodAsync(SecondaryMood item)
         {
-             await Init().ConfigureAwait(false);
-             if (item.Id != 0)
-                 return await _database.UpdateAsync(item).ConfigureAwait(false);
-             else
-                 return await _database.InsertAsync(item).ConfigureAwait(false);
+            await Init().ConfigureAwait(false);
+            if (item.Id != 0)
+                return await _database.UpdateAsync(item).ConfigureAwait(false);
+            else
+                return await _database.InsertAsync(item).ConfigureAwait(false);
         }
 
         public async Task<int> DeleteSecondaryMoodAsync(int id)
