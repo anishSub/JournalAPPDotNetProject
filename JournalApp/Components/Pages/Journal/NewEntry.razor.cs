@@ -336,7 +336,7 @@ namespace JournalApp.Components.Pages.Journal
                     return;
                 }
 
-                LastError = "Saving...";
+                // Status is now shown via toast, no need for debug message
                 await InvokeAsync(StateHasChanged);
 
                 // Determine if this is a new entry or update
@@ -437,7 +437,7 @@ namespace JournalApp.Components.Pages.Journal
                 bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this entry?");
                 if (!confirm) return;
 
-                LastError = "Deleting...";
+                // Status is now shown via toast, no need for debug message
                 await InvokeAsync(StateHasChanged);
 
                 await JournalService.DeleteEntryAsync(_existingId);

@@ -98,6 +98,8 @@ namespace JournalApp.Data
             await SeedSecondaryMoods(requiredMoods).ConfigureAwait(false);
         }
 
+
+
         /// <summary>
         /// Seeds detailed secondary moods (e.g., "Excited", "Anxious") linked to the main parent moods.
         /// </summary>
@@ -222,6 +224,8 @@ namespace JournalApp.Data
             return entry;
         }
 
+
+
         /// <summary>
         /// Saves or updates a journal entry.
         /// Handles associated data persistence for Tags and Secondary Moods in join tables.
@@ -256,6 +260,9 @@ namespace JournalApp.Data
             return result;
         }
 
+
+
+
         /// <summary>
         /// Deletes a journal entry and its related join table records (Tags, Secondary Moods).
         /// </summary>
@@ -272,6 +279,7 @@ namespace JournalApp.Data
         }
 
         #endregion
+
 
 
 
