@@ -145,6 +145,7 @@
             (e.Preview?.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ?? false))
         .OrderByDescending(e => e.Date); 
 
+    //get current entries based on page number and entries per page
     private IEnumerable<JournalEntry> CurrentEntries => 
         FilteredEntries.Skip((CurrentPage - 1) * EntriesPerPage).Take(EntriesPerPage);
 
