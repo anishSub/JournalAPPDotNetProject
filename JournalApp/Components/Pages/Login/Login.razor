@@ -13,6 +13,8 @@
             <p>@(_isSetupMode ? "Set a secure password for your journal" : (_isPinMode ? "Use your quick access PIN" : "Enter your password to access JournalApp"))</p>
         </div>
 
+        
+        //login form
         <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin" class="login-form">
             <div class="form-group">
                 <label for="password">@(_isSetupMode ? "New Password" : (_isPinMode ? "PIN" : "Password"))</label>
